@@ -19,11 +19,11 @@ import { useRouter } from 'vue-router'
 import { useProfileStore } from '@/stores/profile'
 import api from '@/api/profile'
 import RoundBox from '@/components/layout/RoundBox.vue'
-import EditPayment from '@/views/payment/EditPayment.vue'
-import EditProfile from '@/components/profile/EditProfile.vue'
+import EditPayment from '@/components/modal/EditPayment.vue'
+import EditProfile from '@/components/modal/EditProfile.vue'
 import HistoryEntry from '@/components/entry/HistoryEntry.vue'
 import ReviewEntry from '@/components/entry/ReviewEntry.vue'
-import PaymentEntry from '@/components/entry/PaymentEntry.vue'
+import PaymentList from '@/components/list/PaymentList.vue'
 
 /**
  * ==============================================================================
@@ -332,12 +332,7 @@ onMounted(async () => {
           <!-- 오른쪽 섹션 -->
           <div class="col-span-12 lg:col-span-8 space-y-6 flex flex-col min-h-0">
             <!-- 분리된 결제 수단 컴포넌트 적용 -->
-            <PaymentEntry
-              :payment-list="profileStore.userInfo.payment.method"
-              :default-payment-id="profileStore.userInfo.payment.default"
-              @add-card="handleAddPayment"
-              @manage-card="handleManagePayment"
-            />
+            <PaymentList @add-card="handleAddPayment" @manage-card="handleManagePayment" />
 
             <!-- 기록/리뷰 탭 영역 -->
             <RoundBox padding="0" class="overflow-hidden flex flex-col flex-none h-[450px]">

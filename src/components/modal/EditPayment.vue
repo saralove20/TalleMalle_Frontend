@@ -17,10 +17,6 @@ import { useProfileStore } from '@/stores/profile'
  */
 const profileStore = useProfileStore()
 
-const props = defineProps({
-  isOpen: Boolean,
-})
-
 const emits = defineEmits(['close'])
 
 /**
