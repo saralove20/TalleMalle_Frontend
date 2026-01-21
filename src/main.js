@@ -31,7 +31,7 @@ script.onload = () => {
     // 카카오 맵 SDK가 완전히 준비된 후 마운트
     window.kakao.maps.load(() => {
         app.mount('#app')
-        console.log("카카오맵 로드 완료")
+        // console.log("카카오맵 로드 완료")
 
     })
 }

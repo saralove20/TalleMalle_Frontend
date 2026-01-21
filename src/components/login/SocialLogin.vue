@@ -75,7 +75,7 @@ const fetchGoogleUserInfo = async (accessToken) => {
     router.push('/')
 
   } catch (error) {
-    console.error('구글 로그인 에러:', error)
+    // console.error('구글 로그인 에러:', error)
     alert('구글 로그인 중 오류가 발생했습니다.')
   }
 }

@@ -99,7 +99,7 @@ const handleLogin = async () => {
 
   } catch (error) {
     // 실패 시 처리 (401 등 모든 에러)
-    console.error('로그인 실패:', error)
+    // console.error('로그인 실패:', error)
     
     // 아이디/비번 불일치 또는 서버 에러 처리
     const message = error.response?.status === 401 

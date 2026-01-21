@@ -96,7 +96,7 @@ const handleReset = async () => {
     // 성공 시 결과 알림 모달을 오픈합니다.
     isModalOpen.value = true
   } catch (error) {
-    console.error('비밀번호 변경 실패:', error)
+    // console.error('비밀번호 변경 실패:', error)
     window.alert('변경 중 오류가 발생했습니다. 다시 시도해주세요.')
   }
 }

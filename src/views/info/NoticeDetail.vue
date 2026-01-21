@@ -20,9 +20,9 @@ const fetchNoticeDetail = async () => {
     // JSON 구조가 { data: { num: 1, title: "..." } } 이므로 response.data를 할당
     notice.value = response.data
 
-    console.log('불러온 데이터:', notice.value)
+    // console.log('불러온 데이터:', notice.value)
   } catch (error) {
-    console.error('상세 내용을 불러오는데 실패했습니다.', error)
+    // console.error('상세 내용을 불러오는데 실패했습니다.', error)
   } finally {
     isLoading.value = false
   }

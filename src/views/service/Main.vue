@@ -240,7 +240,7 @@ const handleCreateSubmit = (formData) => {
     alert('모집이 시작되었습니다!')
     handleSelectRecruit(newRecruitData)
   } catch (e) {
-    console.error('전송 실패:', e)
+    // console.error('전송 실패:', e)
     alert('전송 중 오류가 발생했습니다.')
   }
 }
@@ -282,7 +282,7 @@ const fetchRecruits = async () => {
       recruitList.value = []
     }
   } catch (error) {
-    console.log('fetchRecruits 에러 : ', error)
+    // console.log('fetchRecruits 에러 : ', error)
     isError.value = true
     alert('데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.')
   } finally {
@@ -305,7 +305,7 @@ const handleSocketMessage = (event) => {
 
     if (!data || typeof data !== 'object') return
 
-    console.log('📩 받은 메시지 : ', data)
+    // console.log('📩 받은 메시지 : ', data)
 
     // 1. 신규 모집글 등록 알림
     if (data.type === 'newRecruit' && data.payload) {
@@ -335,7 +335,7 @@ const handleSocketMessage = (event) => {
       mapComponent.value?.drawPath(data.payload)
     }
   } catch (e) {
-    console.error('🚨 이상한 데이터 수신:', event.data)
+    // console.error('🚨 이상한 데이터 수신:', event.data)
   }
 }
 
@@ -366,7 +366,7 @@ onMounted(async () => {
       // (TODO: 실제로는 상태 검증 API 호출 필요)
     }
   }
-  console.log(`현재 상태: ${myStatus.value}, 방 ID: ${myRecruitId.value}`)
+  // console.log(`현재 상태: ${myStatus.value}, 방 ID: ${myRecruitId.value}`)
 })
 </script>
 

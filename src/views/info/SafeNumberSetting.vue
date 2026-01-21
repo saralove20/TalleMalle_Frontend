@@ -35,7 +35,7 @@ const phoneNumber = ref('010-1234-5678')
  */
 const toggleSafeNumber = () => {
   // 실제 API 연동 시 이곳에서 처리
-  console.log('안심번호 상태 변경:', isSafeNumberEnabled.value)
+  // console.log('안심번호 상태 변경:', isSafeNumberEnabled.value)
 }
 </script>
 

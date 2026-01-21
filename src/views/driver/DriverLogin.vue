@@ -84,7 +84,7 @@ const passwordRules = () => {
  * ==============================================================================
  */
 const handleLogin = async () => {
-  console.log('🚀 로그인 시도!')
+  // console.log('🚀 로그인 시도!')
 
   // 1. 에러 메시지 초기화
   errorMessage.value = ''
@@ -112,7 +112,7 @@ const handleLogin = async () => {
       router.push({ name: 'driverpage' });
     }
   } catch (error) {
-    console.error('로그인 에러:', error)
+    // console.error('로그인 에러:', error)
 
     if (!error.response) {
       // 1. 인터넷 끊김 등 네트워크 에러

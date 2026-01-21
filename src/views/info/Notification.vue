@@ -75,7 +75,7 @@ const loadData = async () => {
         }
     } catch (error) {
         // 3. 예외 처리
-        console.error("알림 데이터 로드 실패:", error)
+        // console.error("알림 데이터 로드 실패:", error)
         isError.value = true
     } finally {
         isLoading.value = false

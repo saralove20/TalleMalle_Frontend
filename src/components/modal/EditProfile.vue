@@ -17,7 +17,7 @@ import RoundBox from '@/components/layout/RoundBox.vue'
  * ==============================================================================
  */
 const profileStore = useProfileStore()
-const emits = defineEmits(['close'])
+const emits = defineEmits(['modal'])
 
 /**
  * ==============================================================================
@@ -140,7 +140,11 @@ const confirmAuth = () => {
 const handleSave = () => {
   if (!isPhoneVerified.value) return
   Object.assign(profileStore.userInfo.profile, localProfile.value)
-  emits('close')
+  handleClose()
+}
+
+const handleClose = () => {
+  emits('modal', 'none')
 }
 
 /**
@@ -161,7 +165,6 @@ onUnmounted(() => {
   <!-- 화면 전체를 덮는 고정 레이어 (배경 블러 처리) -->
   <div
     class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4"
-    @click="emits('close')"
   >
     <RoundBox
       padding="0"
@@ -179,7 +182,7 @@ onUnmounted(() => {
           <h2 class="text-xl font-bold text-slate-900">프로필 정보 수정</h2>
         </div>
         <button
-          @click="emits('close')"
+          @click="handleClose"
           class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
         >
           <X class="w-6 h-6" />
@@ -293,7 +296,7 @@ onUnmounted(() => {
       <!-- 모달 푸터: 하단 버튼 영역 -->
       <div class="p-6 bg-slate-50/50 border-t border-slate-100 flex gap-3">
         <button
-          @click="emits('close')"
+          @click="handleClose"
           class="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-slate-600 transition-all"
         >
           취소

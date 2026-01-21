@@ -227,7 +227,7 @@ const triggerCall = async () => {
 
   } catch (error) {
     // 예외 처리는 여기서 통합 수행
-    console.error('API Error:', error)
+    // console.error('API Error:', error)
 
     const status = error.response?.status
     if (status === 404) {
@@ -262,7 +262,7 @@ const handleSocketMessage = (e) => {
       triggerCall()
     }
   } catch (err) {
-    console.error(err)
+    // console.error(err)
   }
 }
 

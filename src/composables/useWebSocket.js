@@ -41,7 +41,7 @@ export function useWebSocket() {
 
         // 연결 성공 시
         ws.value.onopen = () => {
-            console.log(`✅ Socket Connected : ${url}`)
+            // console.log(`✅ Socket Connected : ${url}`)
             isConnected.value = true
 
             // 연결 성공되면 재연결 타이머 해제
@@ -73,13 +73,13 @@ export function useWebSocket() {
 
         // 연결 종료 시
         ws.value.onclose = () => {
-            console.log("⚠️ Socket disConnected")
+            // console.log("⚠️ Socket disConnected")
             isConnected.value = false
             ws.value = null
 
             // 의도적으로 끈 게 아니면 3초 뒤 재연결 시도
             if (!reconnectTimer) {
-                console.log("🔄 3초 뒤 재연결을 시도합니다...")
+                // console.log("🔄 3초 뒤 재연결을 시도합니다...")
                 reconnectTimer = setTimeout(() => {
                     connect(url, onMessageCallback)
                 }, 3000)

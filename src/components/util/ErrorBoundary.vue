@@ -57,7 +57,7 @@ const handleToggleDetails = () => {
  */
 // 자식 컴포넌트에서 에러가 발생하면 이 함수가 실행됨
 onErrorCaptured((err, instance, info) => {
-    console.log('에러 캐치:', err)
+    // console.log('에러 캐치:', err)
     hasError.value = true
     errorMessage.value = err.message || '알 수 없는 오류가 발생했습니다.'
     return false // 에러 전파 중단

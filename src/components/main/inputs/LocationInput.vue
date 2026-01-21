@@ -64,7 +64,7 @@ const handleInput = (e) => {
 
         // 카카오 API 로드 확인
         if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
-            console.error("카카오 지도 API가 로드되지 않았습니다.")
+            // console.error("카카오 지도 API가 로드되지 않았습니다.")
             return
         }
 

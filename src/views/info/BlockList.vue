@@ -41,7 +41,7 @@ const getBlockList = async () => {
     const res = await api.blockList()
     blockedUsers.value = res.data || res 
   } catch (error) {
-    console.error('차단된 사용자를 불러오는 중 오류 발생:', error)
+    // console.error('차단된 사용자를 불러오는 중 오류 발생:', error)
   }
 }
 

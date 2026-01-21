@@ -53,7 +53,7 @@ const handleClose = () => {
 
 // 출발지 선택 시 좌표 저장 핸들러
 const handleStartSelect = (location) => {
-    console.log("출발지 선택됨:", location)
+    // console.log("출발지 선택됨:", location)
     form.value.start = location.name
     form.value.startLat = location.lat
     form.value.startLng = location.lng
@@ -61,7 +61,7 @@ const handleStartSelect = (location) => {
 
 // 목적지 선택 시 좌표 저장 핸들러
 const handleDestSelect = (location) => {
-    console.log("목적지 선택됨:", location)
+    // console.log("목적지 선택됨:", location)
     form.value.dest = location.name
     form.value.destLat = location.lat
     form.value.destLng = location.lng

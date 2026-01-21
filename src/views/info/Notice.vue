@@ -48,7 +48,7 @@ const getNoticeList = async () => {
     const res = await api.noticeList()
     noticeList.value = res.data || []
   } catch (error) {
-    console.error('공지사항을 불러오는 중 오류 발생:', error)
+    // console.error('공지사항을 불러오는 중 오류 발생:', error)
   }
 }
 
@@ -60,7 +60,7 @@ const getFaqList = async () => {
     const res = await api.faqList()
     faqs.value = res.data || res 
   } catch (error) {
-    console.error('FAQ를 불러오는 중 오류 발생:', error)
+    // console.error('FAQ를 불러오는 중 오류 발생:', error)
   }
 }
 

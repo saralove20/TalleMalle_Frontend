@@ -82,12 +82,15 @@
 
 # 🚀 프로젝트 소개
 
+### 🔗 링크 바로가기
+
 <table width="100%">
   <thead>
     <tr>
-      <th width="33%" align="left">🌐 Service Deployment</th>
-      <th width="33%" align="left">🎨 Design</th>
-      <th width="33%" align="left">📘 API Docs</th>
+      <th width="25%" align="left">🌐 Service Deployment</th>
+      <th width="25%" align="left">🎨 Design</th>
+      <th width="25%" align="left">📘 API Docs</th>
+      <th width="25%" align="left">📏 Code Convention</th>
     </tr>
   </thead>
   <tbody>
@@ -117,21 +120,32 @@
           </a>
         </p>
       </td>
+      <td valign="top">
+        <p>
+          <a href="https://www.notion.so/2dfa4b6b459480e693d3f1e81cf9134a?source=copy_link">
+            <img src="https://img.shields.io/badge/Code-Convention-111827?style=for-the-badge&logo=github&logoColor=white">
+          </a>
+        </p>
+      </td>
     </tr>
   </tbody>
 </table>
 
+
 ### 🎯 서비스 한 줄 요약
 
-**TalleMalle은 같은 경로로 이동하는 사람들을 실시간으로 연결하는 위치 기반 동승 커뮤니티 서비스**
+**'TalleMalle 탈래말래'는 같은 경로로 이동하는 사람들을 실시간으로 연결해 <br/>
+혼자 타기엔 부담스러운 택시 요금을, 같은 목적지의 사람들과 함께 나누는 위치 기반 택시 공유 동승 서비스**
 
 ---
 
 ### 🧩 기획 배경
 
-- 같은 목적지·동선 사용자 간 자발적이고 투명한 매칭 필요
+- 혼자 타기엔 부담되는 택시 비용
 
-- 늦은 시간 혼자 귀가해야 하는 사용자들의 안전 이슈
+- 같은 방향으로 가는 사람이 있어도 함께 탈 방법이 없음
+
+- 같은 목적지·동선 사용자 간 자발적이고 투명한 매칭 필요
 
   ➡️ 이를 해결하기 위해 지도 기반 실시간 동승 커뮤니티 형태의 서비스를 기획했습니다.
 
@@ -169,7 +183,8 @@
 
 ### 🔄 서비스 흐름
 
-회원가입 / 로그인 ➡️ 지도에서 주변 동승글 탐색 ➡️ 모집글 참여 요청 ➡️ 승인 후 채팅방 입장 ➡️ 동승 이동
+- Flow 1) 회원가입 / 로그인 ➡️ 지도에서 주변 동승글 탐색 ➡️ 동승 모집 참여 요청 ➡️ 승인 후 동승 채팅방 입장 ➡️ 동승 이동  <br />
+- Flow 2) 회원가입 / 로그인 ➡️ 동승 모집글 작성 ➡️ 동승 채팅방 생성 ➡️ 동승 참여자 매칭 ➡️ 동승 이동
 
 ---
 
@@ -243,48 +258,113 @@
 # 🎥 기능 테스트
 
 <details>
-<summary>메인 & 지도</summary>
+<summary>🔒 [회원가입/로그인 시연 영상]</summary>
 
-<br/>
-
-<video src="" width="700" controls></video>
+[회원가입/로그인 영상 보기](https://github.com/user-attachments/assets/371186d8-b244-44cb-8337-7ac301cb62ac)
 
 </details>
 
 <details>
-<summary>모집글 작성</summary>
+<summary>🎬 [핵심 기능 시연 영상]</summary>
+<br>
 
-<br/>
-
-<video src="" width="700" controls></video>
+> <details>
+> <summary>📍 모집 생성하기</summary>
+> <br>
+>
+> [모집 생성하기 시연 영상 보기](https://github.com/user-attachments/assets/71aded16-7a97-446d-aa00-a5eadd753d20)
+> </details>
+>
+> <details>
+> <summary>🗺️ 지도 기능 (영역 필터링 및 오프셋)</summary>
+> <br>
+>
+> [지도 기능 시연 영상 보기](https://github.com/user-attachments/assets/79223048-1e01-4eb4-806f-b99124371b92)
+> </details>
+>
+> <details>
+> <summary>📋 모집 패널 필터링</summary>
+> <br>
+>
+> [모집 패널 기능 시연 영상 보기](https://github.com/user-attachments/assets/ee4c3cc8-949b-4de9-a669-2594e16e6a7d)
+> </details>
+>
+> <details>
+> <summary>💬 채팅 참여 및 상태별 버튼 제어</summary>
+> <br>
+>
+> [채팅 참여 별 상태 확인 시연 영상 보기](https://github.com/user-attachments/assets/b84208b3-610f-4b6a-8a2a-846b3217c4e2)
+> </details>
 
 </details>
 
 <details>
-<summary>채팅</summary>
+<summary>💬 [채팅 기능 시연 영상]</summary>
 
-<br/>
-
-<video src="" width="700" controls></video>
-
-</details>
-
-
-<details>
-<summary>마이페이지</summary>
-
-<br/>
-
-<video src="" width="700" controls></video>
+[채팅 기능 영상 보기](https://github.com/user-attachments/assets/034d5f62-f1e7-48ec-98a1-d849418d7581)
 
 </details>
 
 <details>
-<summary>기사 전용 페이지</summary>
+<summary>💳 [결제 수단 편집 시연 영상]</summary>
 
-<br/>
+[결제 수단 편집 영상 보기](https://github.com/user-attachments/assets/f16808b7-ad11-452a-911a-55156444cb9a)
 
-<video src="video/driverpage.mp4" width="700" controls></video>
+</details>
+
+<details>
+<summary>⚙️ [설정 페이지 시연 영상]</summary>
+
+[설정 페이지 영상 보기](https://github.com/user-attachments/assets/56ade880-f195-4ce2-9fb7-897092241388)
+
+</details>
+
+<details>
+<summary>📢 [공지사항 페이지 시연 영상]</summary>
+
+[공지사항 페이지 영상 보기](https://github.com/user-attachments/assets/320badeb-a28b-43e0-a5e7-9c6fc437176f)
+
+</details>
+
+<details>
+<summary>❌ [회원 탈퇴 시연 영상]</summary>
+
+[회원 탈퇴 영상 보기](https://github.com/user-attachments/assets/195a1dc7-df97-44fc-9117-440f37e732c2)
+
+</details>
+
+<details>
+<summary>👍 [리뷰 및 탑승 기록 시연 영상]</summary>
+
+[리뷰 및 탑승 기록 영상 보기](https://github.com/user-attachments/assets/f5e218d9-3bb5-4ee4-8ac7-314c621b232f)
+
+</details>
+
+<details>
+<summary>👤 [프로필 편집 시연 영상]</summary>
+
+[프로필 편집 영상 보기](https://github.com/user-attachments/assets/cb06f0b4-67c8-429d-86a9-bc521e3df89b)
+
+</details>
+
+<details>
+<summary>🔔 [알림 기능 시연 영상]</summary>
+
+[알림 기능 영상 보기](https://github.com/user-attachments/assets/1c2c2263-5fc0-4932-8a44-fcbc72f26375)
+
+</details>
+
+<details>
+<summary>🚕 [기사 전용 페이지 시연 영상]</summary>
+
+[기사 전용 페이지 시연 영상 보기](https://github.com/user-attachments/assets/efaad669-b891-44fd-ad4d-4e2d74e94843)
+
+</details>
+
+<details>
+<summary>🚨 [에러 바운더리 영상]</summary>
+
+[에러 바운더 영상 보기](https://github.com/user-attachments/assets/ff82038e-7825-440b-9605-7b00d0e4a113)
 
 </details>
 
