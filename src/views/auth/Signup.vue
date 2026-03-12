@@ -61,7 +61,11 @@ const errors = ref({
 
 const authCodeInput = ref('');
 
-// --- 메소드 ---
+/**
+ * ==============================================================================
+ * 4. METHODS - FUNCTIONAL (기능 및 UI 로직)
+ * ==============================================================================
+ */
 
 // 전화번호 자동 하이픈
 const autoHyphen = () => {
@@ -73,15 +77,15 @@ const autoHyphen = () => {
 
 // 생년월일 자동 마침표 (.) 포맷팅
 const handleBirthInput = (e) => {
-    let val = e.target.value.replace(/\D/g, "");
+    let val = e.target.value.replace(/\D/g, ""); // 숫자만 남김
     let result = "";
 
     if (val.length <= 4) {
         result = val;
     } else if (val.length <= 6) {
-        result = val.slice(0, 4) + "." + val.slice(4);
+        result = val.slice(0, 4) + "-" + val.slice(4); // . 대신 - 사용
     } else {
-        result = val.slice(0, 4) + "." + val.slice(4, 6) + "." + val.slice(6, 8);
+        result = val.slice(0, 4) + "-" + val.slice(4, 6) + "-" + val.slice(6, 8);
     }
     form.value.birth = result;
 }
@@ -156,6 +160,12 @@ const goToStep2 = () => {
     step.value = 2
 }
 
+/**
+ * ==============================================================================
+ * 5. METHODS - API & NETWORK (서버 연동)
+ * ==============================================================================
+ */
+// --- 회원가입 처리 ---
 const handleSignup = () => {
     if (!verification.value.isEmailVerified) {
         alert('이메일 인증을 완료해주세요.')
