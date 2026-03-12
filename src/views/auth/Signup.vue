@@ -83,7 +83,7 @@ const handleBirthInput = (e) => {
     if (val.length <= 4) {
         result = val;
     } else if (val.length <= 6) {
-        result = val.slice(0, 4) + "-" + val.slice(4); // . 대신 - 사용
+        result = val.slice(0, 4) + "-" + val.slice(4); 
     } else {
         result = val.slice(0, 4) + "-" + val.slice(4, 6) + "-" + val.slice(6, 8);
     }
@@ -184,11 +184,6 @@ const handleSignup = () => {
         return
     }
 
-    // 최종 데이터 전송 시 .을 -로 치환 (선택 사항)
-    const finalData = {
-        ...form.value,
-        birth: form.value.birth.replaceAll('.', '-')
-    }
     console.log('가입 데이터:', finalData)
     alert('회원가입이 완료되었습니다!')
     router.push('/login')
