@@ -240,7 +240,7 @@ onUnmounted(() => {
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-400 uppercase ml-1">생년월일</label>
-                            <input v-model="form.birth" @input="handleBirthInput" type="text" placeholder="YYYY.MM.DD"
+                            <input v-model="form.birth" @input="handleBirthInput" type="text" placeholder="YYYY-MM-DD"
                                 maxlength="10"
                                 class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                         </div>
@@ -300,6 +300,16 @@ onUnmounted(() => {
                         <p v-if="errors.passwordMatch" class="text-xs text-rose-500 ml-1">비밀번호가 일치하지 않습니다.</p>
                     </div>
 
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-400 uppercase ml-1">닉네임</label>
+                        <div class="relative">
+                            <input v-model="form.ㅇ" type="" placeholder="사용할 닉네임을 입력해주세요"
+                                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                :class="{ 'border-rose-500 bg-rose-50': errors.passwordMatch }" />
+                            <CheckCircle2 class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
+                        </div>
+                    </div>
+
                     <div class="pt-2 space-y-3 border-t border-slate-50 mt-2 mb-6">
                         <label class="flex items-center gap-3 cursor-pointer group">
                             <input v-model="form.termCheck" type="checkbox"
@@ -337,7 +347,7 @@ onUnmounted(() => {
                 <h3 class="text-lg font-bold text-slate-900">인증번호 발송 완료</h3>
                 <p class="text-sm text-slate-500 mt-1">입력하신 정보로 인증번호가 전송되었습니다.</p>
                 <div class="mt-6 mb-2">
-                    <input v-model="authCodeInput" type="text" placeholder="1234" maxlength="4"
+                    <input v-model="authCodeInput" type="text" placeholder="인증번호 6자리를 입력해주세요" maxlength="4"
                         class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div class="text-sm font-bold text-rose-500 mb-6">{{ formattedTimer }}</div>
