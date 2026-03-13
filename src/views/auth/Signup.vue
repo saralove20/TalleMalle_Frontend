@@ -18,7 +18,7 @@ import api from '@/api/user'
  * 2. CONFIG & STORES (설정 및 스토어)
  * ==============================================================================
  */
-const router = useRouter()
+const router = useRouter() 
 
 /**
  * ==============================================================================
@@ -88,7 +88,7 @@ const handleBirthInput = (e) => {
         result = val;
     } else if (val.length <= 6) {
         result = val.slice(0, 4) + "-" + val.slice(4); 
-    } else {
+  } else {
         result = val.slice(0, 4) + "-" + val.slice(4, 6) + "-" + val.slice(6, 8);
     }
     form.value.birth = result;
@@ -137,7 +137,7 @@ const confirmAuth = (inputCode) => {
 
         if (verification.value.currentType === 'phoneNumber') {
             verification.value.isPhoneVerified = true
-        } else {
+  } else {
             verification.value.isEmailVerified = true
         }
         alert('인증되었습니다.')
@@ -193,8 +193,8 @@ const handleSignup = async () => {
     
     // 성공 시 처리 (HTTP 200, 201 등 2xx 응답)
     // console.log('Signup Response:', res)
-    alert('회원가입이 완료되었습니다. 로그인해주세요.')
-    router.push('/login')
+      alert('회원가입이 완료되었습니다. 로그인해주세요.')
+      router.push('/login')
 
     console.log('가입 데이터:', res.data)
   } catch (error) {
@@ -207,7 +207,7 @@ const handleSignup = async () => {
     
     // alert('회원가입이 완료되었습니다!')
     // router.push('/login')
-}
+  }
 
 onUnmounted(() => {
     if (verification.value.timerInterval) clearInterval(verification.value.timerInterval)
@@ -343,16 +343,16 @@ onUnmounted(() => {
                             class="px-5 py-4 rounded-xl border border-slate-200 text-slate-500 font-bold hover:bg-slate-50">이전</button>
                         <button @click="handleSignup"
                             class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                            <span>가입 완료</span>
-                            <Check class="w-5 h-5" />
-                        </button>
+        <span>가입 완료</span>
+        <Check class="w-5 h-5" />
+      </button>
                     </div>
                 </div>
             </div>
 
             <div class="p-6 bg-slate-50 text-center border-t border-slate-100">
-                <p class="text-sm text-slate-500">
-                    이미 계정이 있으신가요?
+      <p class="text-sm text-slate-500">
+        이미 계정이 있으신가요?
                     <router-link to="/login" class="text-indigo-600 font-bold hover:underline">로그인</router-link>
                 </p>
             </div>
@@ -379,5 +379,5 @@ onUnmounted(() => {
                 </div>
             </div>
         </div>
-    </div>
+  </div>
 </template>
