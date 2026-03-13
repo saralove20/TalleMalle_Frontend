@@ -15,7 +15,7 @@ const login = async (req) => {
 }
 
 const signup = async (req) => {
-  return await api.post('/user/join', req)
+  return await api.post('/user/signup', req)
 }
 
 export default { login, signup }

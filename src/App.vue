@@ -16,7 +16,7 @@ const goToDriverLogin = () => router.push('/driverlogin')
 </script>
 
 <template>
-  <ErrorBoundary>
+  <!-- <ErrorBoundary> -->
     <div class="h-screen w-screen overflow-hidden bg-slate-50 relative flex">
 
       <main class="flex-1 w-full h-full relative z-0">
@@ -31,7 +31,7 @@ const goToDriverLogin = () => router.push('/driverlogin')
         </div>
       </Transition>
     </div>
-  </ErrorBoundary>
+  <!-- </ErrorBoundary> -->
 </template>
 
 <style>

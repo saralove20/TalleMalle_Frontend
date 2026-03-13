@@ -4,12 +4,14 @@
  * 1. IMPORTS
  * ==============================================================================
  */
+
 import { ref, computed, onUnmounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import {
     CarFront, User, ArrowRight, Lock, CheckCircle2, Check,
     Info, Send, AlertCircle
 } from 'lucide-vue-next'
+import api from '@/api/user'
 
 /**
  * ==============================================================================
@@ -28,13 +30,14 @@ const step = ref(1)
 
 // 회원가입 폼 데이터
 const form = ref({
-    username: '',
-    phone: '',
+    name: '',
+    phoneNumber: '',
     birth: '',      
     gender: '',     
     email: '',
     password: '',
     passwordConfirm: '',
+    nickname: '',
     termCheck: false,
     isStudent: false
 })
@@ -42,6 +45,7 @@ const form = ref({
 // 인증 관련 상태
 const verification = ref({
     isPhoneVerified: false,     // 휴대폰 인증 성공 여부
+
     isEmailVerified: false,     // 이메일 인증 성공 여부
     phoneCode: '',              
     emailCode: '',
@@ -53,7 +57,7 @@ const verification = ref({
 
 // 에러 메세지 관련
 const errors = ref({
-    phone: '',
+    phoneNumber: '',
     email: '',
     password: '',
     passwordMatch: false
@@ -69,7 +73,7 @@ const authCodeInput = ref('');
 
 // 전화번호 자동 하이픈
 const autoHyphen = () => {
-    form.value.phone = form.value.phone
+    form.value.phoneNumber = form.value.phoneNumber
         .replace(/[^0-9]/g, "")
         .replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, "$1-$2-$3")
         .replace(/(\-{1,2})$/g, "");
@@ -94,7 +98,7 @@ const handleBirthInput = (e) => {
 const requestAuth = (type) => {
     verification.value.currentType = type
 
-    if (type === 'phone' && form.value.phone.length < 12) {
+    if (type === 'phoneNumber' && form.value.phoneNumber.length < 12) {
         alert('휴대폰 번호를 올바르게 입력해주세요.')
         return
     }
@@ -131,7 +135,7 @@ const confirmAuth = (inputCode) => {
         clearInterval(verification.value.timerInterval)
         verification.value.isTimerRunning = false
 
-        if (verification.value.currentType === 'phone') {
+        if (verification.value.currentType === 'phoneNumber') {
             verification.value.isPhoneVerified = true
         } else {
             verification.value.isEmailVerified = true
@@ -145,7 +149,7 @@ const confirmAuth = (inputCode) => {
 
 // 단계 이동 (유효성 검증 수정)
 const goToStep2 = () => {
-    if (!form.value.username || !form.value.phone || !form.value.birth || !form.value.gender) {
+    if (!form.value.name || !form.value.phoneNumber || !form.value.birth || !form.value.gender) {
         alert('모든 정보를 입력해주세요.')
         return
     }
@@ -166,7 +170,7 @@ const goToStep2 = () => {
  * ==============================================================================
  */
 // --- 회원가입 처리 ---
-const handleSignup = () => {
+const handleSignup = async () => {
     if (!verification.value.isEmailVerified) {
         alert('이메일 인증을 완료해주세요.')
         return
@@ -184,9 +188,25 @@ const handleSignup = () => {
         return
     }
 
-    console.log('가입 데이터:', finalData)
-    alert('회원가입이 완료되었습니다!')
+    try {
+    const res = await api.signup(form.value)
+    
+    // 성공 시 처리 (HTTP 200, 201 등 2xx 응답)
+    // console.log('Signup Response:', res)
+    alert('회원가입이 완료되었습니다. 로그인해주세요.')
     router.push('/login')
+
+    console.log('가입 데이터:', res.data)
+  } catch (error) {
+    // API 서버에서 오는 400, 500번대 에러는 모두 이쪽으로 들어옵니다.
+    console.error('회원가입 실패:', error)
+    const message = error.response?.data?.message || '회원가입에 실패했습니다. 다시 시도해주세요.'
+    alert(message)
+  }
+
+    
+    // alert('회원가입이 완료되었습니다!')
+    // router.push('/login')
 }
 
 onUnmounted(() => {
@@ -218,7 +238,7 @@ onUnmounted(() => {
                     <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-400 uppercase ml-1">이름</label>
                         <div class="relative">
-                            <input v-model="form.username" type="text" placeholder="실명을 입력해주세요"
+                            <input v-model="form.name" type="text" placeholder="실명을 입력해주세요"
                                 class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                             <User class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
                         </div>
@@ -227,10 +247,10 @@ onUnmounted(() => {
                     <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-400 uppercase ml-1">휴대폰 번호</label>
                         <div class="flex gap-2">
-                            <input v-model="form.phone" @input="autoHyphen" type="tel" placeholder="010-0000-0000"
+                            <input v-model="form.phoneNumber" @input="autoHyphen" type="tel" placeholder="010-0000-0000"
                                 maxlength="13" :disabled="verification.isPhoneVerified"
                                 class="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-slate-100" />
-                            <button type="button" @click="requestAuth('phone')" :disabled="verification.isPhoneVerified"
+                            <button type="button" @click="requestAuth('phoneNumber')" :disabled="verification.isPhoneVerified"
                                 class="px-4 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition-colors whitespace-nowrap min-w-[80px] disabled:bg-emerald-500 disabled:cursor-default">
                                 {{ verification.isPhoneVerified ? '인증 완료' : '인증번호' }}
                             </button>
@@ -303,7 +323,7 @@ onUnmounted(() => {
                     <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-400 uppercase ml-1">닉네임</label>
                         <div class="relative">
-                            <input v-model="form.ㅇ" type="" placeholder="사용할 닉네임을 입력해주세요"
+                            <input v-model="form.nickname" type="" placeholder="사용할 닉네임을 입력해주세요"
                                 class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                                 :class="{ 'border-rose-500 bg-rose-50': errors.passwordMatch }" />
                             <CheckCircle2 class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
