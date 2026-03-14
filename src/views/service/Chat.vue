@@ -191,7 +191,7 @@ const fetchInitialData = async () => {
 
     // API 병렬 호출
     const [historyData, participantsData, apiRideDetail] = await Promise.all([
-      api.getChatHistory(),
+      recruitId.value ? api.getChatHistory(recruitId.value) : Promise.resolve([]),
       api.getChatParticipants(),
       !storeRideInfo ? api.getRideDetail() : Promise.resolve(null),
     ])
