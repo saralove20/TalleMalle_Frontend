@@ -4,7 +4,7 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { ref, onMounted, watch } from 'vue'
+import { ref, shallowRef, onMounted, watch, nextTick } from 'vue'
 import taxiImg from '@/assets/images/taxi.png'
 
 /**
@@ -27,10 +27,10 @@ const emit = defineEmits(['update-location', 'marker-click', 'update-visible-lis
  * ==============================================================================
  */
 const mapContainer = ref(null)
-const mapInstance = ref(null)
-const myMarker = ref(null)
-const driverMarker = ref(null)
-const recruitMarkers = ref(new Map()) // ID를 키로 관리하는 Map
+const mapInstance = shallowRef(null)
+const myMarker = shallowRef(null)
+const driverMarker = shallowRef(null)
+const recruitMarkers = shallowRef(new Map())
 let polyline = null // 경로 선 객체
 
 // 초기 위치 (강남역 부근)
@@ -264,24 +264,41 @@ watch(() => props.recruitList, () => {
  * ==============================================================================
  */
 onMounted(() => {
-    if (window.kakao && window.kakao.maps) {
-        window.kakao.maps.load(() => {
-            const options = {
-                center: new window.kakao.maps.LatLng(lat.value, lng.value),
-                level: 3
-            }
-            mapInstance.value = new window.kakao.maps.Map(mapContainer.value, options)
+    console.log("🚀 onMounted 실행! 지도 그리기 시작!")
 
-            initializeGeolocation()
+    const initMap = () => {
+        if (!mapContainer.value) return
 
-            // 처음 로드될 때 데이터가 있으면 마커 찍기
-            window.kakao.maps.event.addListener(mapInstance.value, 'idle', handleUpdateVisibleMarkers)
+        const options = {
+            center: new window.kakao.maps.LatLng(lat.value, lng.value),
+            level: 3
+        }
 
-            if (props.recruitList.length > 0) {
-                handleUpdateRecruitMarkers()
+        mapInstance.value = new window.kakao.maps.Map(mapContainer.value, options)
+
+        initializeGeolocation()
+
+        window.kakao.maps.event.addListener(mapInstance.value, 'idle', handleUpdateVisibleMarkers)
+        if (props.recruitList.length > 0) {
+            handleUpdateRecruitMarkers()
+        }
+
+        const resizeObserver = new ResizeObserver(() => {
+            if (mapInstance.value && mapContainer.value.clientWidth > 0) {
+                mapInstance.value.relayout()
             }
         })
+
+        resizeObserver.observe(mapContainer.value)
     }
+
+    nextTick(() => {
+        if (window.kakao && window.kakao.maps) {
+            window.kakao.maps.load(initMap);
+        } else {
+            console.error("Kakao Maps script not loaded");
+        }
+    })
 })
 
 defineExpose({

@@ -103,6 +103,19 @@ const mapCenterOffset = computed(() => {
  * 5. METHODS - UI & LOGIC (기능 처리 및 이벤트 핸들러)
  * ==============================================================================
  */
+// 시간 포맷팅 함수
+const formatTime = (dateString) => {
+  if (!dateString) return '시간 미정'
+
+  const date = new Date(dateString)
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${month}월 ${day}일 ${hours}:${minutes}`
+}
+
 // 리스트 패널 토글 핸들러
 const handleToggleListPanel = () => {
   isListPanelOpen.value = !isListPanelOpen.value
@@ -193,7 +206,19 @@ const handleCreateSubmit = async (formData) => {
   }
 
   try {
-    await api.registerRecruit(reqData)
+    console.log('백엔드로 전송되는 모집글 데이터:', reqData)
+    const res = await api.registerRecruit(reqData)
+
+    const newRecruit = res.data.result
+
+    if (newRecruit && newRecruit.idx) {
+      recruitStore.setOwner(newRecruit.idx)
+      displayRoute.value = `${newRecruit.startPointName} → ${newRecruit.destPointName}`
+
+      if (authStore.user) {
+        authStore.user.status = 'OWNER'
+      }
+    }
 
     isCreateModalOpen.value = false
     alert("모집이 시작되었습니다!")
@@ -202,6 +227,40 @@ const handleCreateSubmit = async (formData) => {
     alert("모집글 등록 중 오류가 발생했습니다. 다시 시도해주세요.")
   }
 
+}
+
+// 모집글 등록 시 상태 동기화 함수
+const syncRecruitStatus = () => {
+  const user = authStore.user
+
+  console.log(user.status)
+
+  // 상태가 없거나 IDLE면 그냥 return
+  if (!user || !user.status || user.status === "IDLE") {
+    return
+  }
+
+  const myIdx = user.idx
+
+  if (user.status === "OWNER") {
+    // 내가 방장인 모집글 찾기
+    const myRoomIdx = recruitList.value.find((r) => r.ownerId === myIdx)
+
+    if (myRoomIdx) {
+      recruitStore.setOwner(myRoomIdx.id)
+      displayRoute.value = `${myRoomIdx.start} → ${myRoomIdx.dest}`
+    }
+  } else if (user.status === "JOINED") {
+    // 내가 참여자인 모집글 찾기
+    const myRoomIdx = recruitList.value.find((r) =>
+      r.participationList && r.participationList.some((p) => p.useridx === myIdx)
+    )
+
+    if (myRoomIdx) {
+      recruitStore.setJoined(myRoomIdx.id)
+      displayRoute.value = `${myRoom.start} → ${myRoom.dest}`
+    }
+  }
 }
 
 // 내 위치 업데이트 핸들러 (지도 이벤트)
@@ -247,7 +306,7 @@ const fetchRecruits = async () => {
         id: item.idx,
         start: item.startPointName,
         dest: item.destPointName,
-        time: item.departureTime,
+        time: formatTime(item.departureTime),
         cur: item.currentCapacity,
         max: item.maxCapacity
       }))
@@ -293,7 +352,7 @@ const handleSocketMessage = (event) => {
         id: item.idx,
         start: item.startPointName,
         dest: item.destPointName,
-        time: item.departureTime,
+        time: formatTime(item.departureTime),
         cur: item.currentCapacity,
         max: item.maxCapacity
       }
@@ -335,28 +394,23 @@ const handleSocketMessage = (event) => {
  * ==============================================================================
  */
 onMounted(async () => {
-  // 1. 비로그인 접근 차단
+  // 비로그인 접근 차단
   if (!authStore.user) {
     router.push('/login')
     return
   }
 
-  // 2. 소켓 연결 시작
-  const baseUrl = import.meta.env.VITE_WS_URL
+  // 소켓 연결 시작
   const wsUrl = 'ws://localhost:8080/ws'
   connect(wsUrl, handleSocketMessage)
 
-  // 3. 초기 데이터 로드
+  // 초기 데이터 로드
   await fetchRecruits()
 
-  // 4. 상태 복구/검증 로직
-  if (myStatus.value !== 'IDLE' && myRecruitId.value) {
-    const targetRoom = recruitList.value.find((r) => r.id === myRecruitId.value)
-    if (!targetRoom) {
-      // (TODO: 실제로는 상태 검증 API 호출 필요)
-    }
-  }
-  // console.log(`현재 상태: ${myStatus.value}, 방 ID: ${myRecruitId.value}`)
+  // 유저의 Status 확인
+  syncRecruitStatus()
+
+  console.log(`현재 상태: ${myStatus.value}, 방 ID: ${myRecruitId.value}`)
 })
 </script>
 
@@ -415,7 +469,7 @@ onMounted(async () => {
       </Transition>
     </div>
 
-    <MapControls :nickname="authStore.user?.userName" @zoom-in="handleZoomIn" @zoom-out="handleZoomOut"
+    <MapControls :nickname="authStore.user?.nickname" @zoom-in="handleZoomIn" @zoom-out="handleZoomOut"
       @move-location="handleMoveToCurrentLocation" />
 
     <BottomActionBar :class="bottomBarClass" :route-info="displayRoute" :button-state="actionButtonState"

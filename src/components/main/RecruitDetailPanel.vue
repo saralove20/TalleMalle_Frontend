@@ -107,7 +107,7 @@ const joinButtonState = computed(() => {
             </div>
 
             <p class="text-[14px] text-slate-600 leading-relaxed bg-slate-50 p-5 rounded-3xl">
-                {{ recruit.desc || '별도의 설명이 없습니다.' }}
+                {{ recruit.description || '별도의 설명이 없습니다.' }}
             </p>
 
             <div class="flex flex-wrap gap-2">
