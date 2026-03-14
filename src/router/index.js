@@ -4,6 +4,7 @@ import Main from '@/views/service/Main.vue'
 import Login from '@/views/auth/Login.vue'
 import Signup from '@/views/auth/Signup.vue'
 import SignupOldVersion from '@/views/auth/SignupOldVersion.vue'
+import signupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
 import Chat from '@/views/service/Chat.vue'
 import MyPage from '@/views/user/MyPage.vue'
 import FindPassword from '@/views/auth/FindPassword.vue'
@@ -64,6 +65,12 @@ const router = createRouter({
     // hideNavbar: true 로그인 페이지에선 사이드바 숨김
     { path: '/login', name: 'login', component: Login, meta: { hideNavbar: true } },
     { path: '/signup', name: 'signup', component: Signup, meta: { hideNavbar: true } },
+    {
+      path: '/signup/extra',
+      name: 'signupExtraInfo',
+      component: signupExtraInfo,
+      meta: { hideNavbar: true },
+    },
     {
       path: '/findpassword',
       name: 'findpassword',
