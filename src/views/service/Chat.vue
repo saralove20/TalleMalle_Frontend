@@ -192,16 +192,28 @@ const fetchInitialData = async () => {
     // 스토어에 여정 정보가 있는지 확인
     const storeRideInfo = recruitStore.currentRideInfo
 
-    // API 병렬 호출
-    const [historyData, participantsData, apiRideDetail] = await Promise.all([
+    // API 병렬 호출 (부분 실패 허용)
+    const [historyResult, participantsResult, rideDetailResult] = await Promise.allSettled([
       roomId.value ? api.getChatHistory(roomId.value) : Promise.resolve([]),
       api.getChatParticipants(),
       !storeRideInfo ? api.getRideDetail() : Promise.resolve(null),
     ])
 
-    const historyList = historyData?.result ?? historyData ?? []
-    messages.value = historyList.map(normalizeHistoryMessage).filter(Boolean)
-    usersData.value = participantsData || {}
+    if (historyResult.status === 'fulfilled') {
+      const historyData = historyResult.value
+      const historyList = historyData?.result ?? historyData ?? []
+      messages.value = historyList.map(normalizeHistoryMessage).filter(Boolean)
+    } else {
+      messages.value = [
+        { id: 1, type: 'date', text: 'Today' },
+        { id: 2, type: 'system', text: `⚠️ 대화 내역을 불러오는데 실패했습니다.` },
+      ]
+    }
+
+    usersData.value =
+      participantsResult.status === 'fulfilled' ? participantsResult.value || {} : {}
+
+    const apiRideDetail = rideDetailResult.status === 'fulfilled' ? rideDetailResult.value : null
 
     // 스토어 데이터 우선 적용, 없으면 API 데이터 사용
     rideInfo.value = storeRideInfo || apiRideDetail || null
@@ -220,12 +232,6 @@ const fetchInitialData = async () => {
         reviews: [],
       }
     }
-  } catch (error) {
-    // console.error('fetchInitialData 실패:', error)
-    messages.value = [
-      { id: 1, type: 'date', text: 'Today' },
-      { id: 2, type: 'system', text: `⚠️ 데이터를 불러오는데 실패했습니다: ${error.message}` },
-    ]
   } finally {
     isLoading.value = false
   }
