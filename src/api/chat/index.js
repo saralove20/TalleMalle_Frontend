@@ -19,8 +19,8 @@ const getChatHistory = async (recruitId) => {
  * 채팅방 참여자 목록 가져오기
  * @returns {Promise<Object>} 사용자 ID를 키로 갖는 유저 정보 객체
  */
-const getChatParticipants = async () => {
-  const response = await api.get('/json/participants')
+const getChatParticipants = async (recruitId) => {
+  const response = await api.get(`/recruits/${recruitId}/participants`)
   return response.data
 }
 
