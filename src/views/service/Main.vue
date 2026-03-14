@@ -171,78 +171,37 @@ const handleJoinChat = () => {
   router.push('/chat')
 }
 
-// 모집 생성 제출 핸들러 (기능 로직 포함)
-const handleCreateSubmit = (formData) => {
+// 모집글 생성 함수
+const handleCreateSubmit = async (formData) => {
   if (myStatus.value !== 'IDLE') {
     alert('이미 진행 중인 모집이 있습니다.')
     return
   }
 
-  // 1. 좌표 데이터 안전하게 추출
-  const lat = formData.startLat || formData.lat || formData.y
-  const lng = formData.startLng || formData.lng || formData.x
-
-  if (!lat || !lng) {
-    alert('출발지와 목적지의 위치 정보가 정확하지 않습니다.')
-    return
-  }
-
-  // 2. 출발지/도착지 명칭 데이터 처리
-  let startName = formData.startPoint || formData.start || formData.departure || '출발지'
-  let destName = formData.destPoint || formData.dest || formData.destination || '목적지'
-
-  if (typeof startName === 'object')
-    startName = startName.name || startName.text || startName.address || '출발지'
-  if (typeof destName === 'object')
-    destName = destName.name || destName.text || destName.address || '목적지'
-
-  const newId = Date.now()
-
-  // 3. 데이터 통합
-  const newRecruitData = {
-    id: newId,
-    nickname: authStore.user?.userName || '익명 승객',
-    ...formData,
-    startLat: lat,
-    startLng: lng,
-    startPoint: startName,
-    destPoint: destName,
-    cur: 1,
-    max: formData.max || 4,
-  }
-
-  // 소켓 전송용 payload
-  const payload = {
-    type: 'createRecruit',
-    payload: newRecruitData,
+  // formData를 백엔드 Dto에 맞게 변환
+  const reqData = {
+    startPointName: formData.startPoint || formData.start,
+    startLat: formData.startLat || formData.lat || formData.y,
+    startLng: formData.startLng || formData.lng || formData.x,
+    destPointName: formData.destPoint || formData.dest,
+    destLat: formData.destLat,
+    destLng: formData.destLng,
+    departureTime: new Date().toISOString(),
+    maxCapacity: formData.max || 4,
+    description: formData.description,
+    tags: []
   }
 
   try {
-    if (isConnected.value) {
-      sendMessage(payload)
-    }
-
-    // UI 즉시 갱신
-    recruitList.value.unshift(newRecruitData)
-    recruitStore.setOwner(newId)
-    recruitStore.setRideInfo({
-      driver: { name: '매칭 대기중', car: '-', plate: '-', type: '택시' },
-      route: {
-        start: startName,
-        dest: destName,
-        startTime: '방금 출발',
-        endTime: '-',
-      },
-      payment: { total: 0, mine: 0, status: '정산 대기' },
-    })
+    await api.registerRecruit(reqData)
 
     isCreateModalOpen.value = false
-    alert('모집이 시작되었습니다!')
-    handleSelectRecruit(newRecruitData)
-  } catch (e) {
-    // console.error('전송 실패:', e)
-    alert('전송 중 오류가 발생했습니다.')
+    alert("모집이 시작되었습니다!")
+  } catch (error) {
+    console.log("🚨 모집글 등록 에러 발생 : ", error)
+    alert("모집글 등록 중 오류가 발생했습니다. 다시 시도해주세요.")
   }
+
 }
 
 // 내 위치 업데이트 핸들러 (지도 이벤트)
@@ -274,15 +233,33 @@ const handleMoveToCurrentLocation = () => mapComponent.value?.panToCurrent()
 const fetchRecruits = async () => {
   isLoading.value = true
   isError.value = false
+
   try {
+    // 모집 리스트 조회 후 res에 담아줌
     const res = await api.getRecruitList()
-    if (res && Array.isArray(res.data)) {
-      recruitList.value = res.data.filter((item) => item.startLat && item.startLng)
+
+    // 응답 데이터에서 배열에 담긴 result 담기
+    const targetData = res.data.result;
+
+    if (Array.isArray(targetData)) {
+      const mappedData = targetData.map((item) => ({
+        ...item,
+        id: item.idx,
+        start: item.startPointName,
+        dest: item.destPointName,
+        time: item.departureTime,
+        cur: item.currentCapacity,
+        max: item.maxCapacity
+      }))
+
+      recruitList.value = mappedData.filter((item) => item.startLat && item.startLng)
     } else {
-      recruitList.value = []
+      recruitList.value = [];
     }
+
+
   } catch (error) {
-    // console.log('fetchRecruits 에러 : ', error)
+    console.log('fetchRecruits 에러 : ', error)
     isError.value = true
     alert('데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.')
   } finally {
@@ -307,13 +284,26 @@ const handleSocketMessage = (event) => {
 
     // console.log('📩 받은 메시지 : ', data)
 
-    // 1. 신규 모집글 등록 알림
+    // 신규 모집글 등록 시 조회
     if (data.type === 'newRecruit' && data.payload) {
-      // 현재 리스트에 같은 ID가 있는지 확인
-      const isExist = recruitList.value.some(item => item.id === data.payload.id)
-      // 리스트에 없을 때만 추가
+      const item = data.payload
+
+      const mappedItem = {
+        ...item,
+        id: item.idx,
+        start: item.startPointName,
+        dest: item.destPointName,
+        time: item.departureTime,
+        cur: item.currentCapacity,
+        max: item.maxCapacity
+      }
+
+      // 현재 리스트에 같은 ID가 있는지 확인 후에 맨 앞에 추가
+      const isExist = recruitList.value.some(r => r.id === mappedItem.id)
+
       if (!isExist) {
-        recruitList.value.unshift(data.payload)
+        recruitList.value.unshift(mappedItem)
+        console.log("새로운 모집글이 생성되었습니다!", mappedItem)
       }
     }
     // 2. 모집글 수정 알림
@@ -353,7 +343,7 @@ onMounted(async () => {
 
   // 2. 소켓 연결 시작
   const baseUrl = import.meta.env.VITE_WS_URL
-  const wsUrl = `${baseUrl}?userId=${encodeURIComponent(authStore.user.id)}`
+  const wsUrl = 'ws://localhost:8080/ws'
   connect(wsUrl, handleSocketMessage)
 
   // 3. 초기 데이터 로드
