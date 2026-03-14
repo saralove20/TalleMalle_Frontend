@@ -4,9 +4,10 @@
  * 1. IMPORTS (라이브러리 -> 스토어/API -> 컴포넌트)
  * ==============================================================================
  */
-import { ref, reactive, onMounted, onUnmounted, provide } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, provide, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Client } from '@stomp/stompjs'
+import { useRoute } from 'vue-router'
 
 // Stores & API
 import { useAuthStore } from '@/stores/auth'
@@ -27,6 +28,7 @@ const authStore = useAuthStore()
 const recruitStore = useRecruitStore()
 const { user } = storeToRefs(authStore)
 const { recruitId } = storeToRefs(recruitStore)
+const route = useRoute()
 
 // 하위 컴포넌트(Header, MemberList)에서 내 이름을 쓸 수 있도록 전달
 const myUserName = ref('익명')
@@ -40,6 +42,7 @@ provide('myUserName', myUserName)
 // WebSocket 관련
 const isConnected = ref(false)
 let stompClient = null
+const roomId = ref(null)
 
 // 사용자 정보
 const myUserId = ref(`user_${Math.floor(Math.random() * 1000)}`)
@@ -120,13 +123,13 @@ const handleSendMessage = (textToSend) => {
   })
 
   // 실제 서버 전송
-  if (stompClient && isConnected.value && recruitId.value) {
+  if (stompClient && isConnected.value && roomId.value) {
     const payload = {
       contents: textToSend,
       timestamp: now.toISOString(),
     }
     stompClient.publish({
-      destination: `/app/chat/send/${recruitId.value}`,
+      destination: `/app/chat/send/${roomId.value}`,
       body: JSON.stringify(payload),
     })
   } else {
@@ -153,14 +156,14 @@ const handleSendImage = (imageData) => {
   })
 
   // 2. 소켓 전송
-  if (stompClient && isConnected.value && recruitId.value) {
+  if (stompClient && isConnected.value && roomId.value) {
     const payload = {
       type: 'image',
       contents: imageData,
       timestamp: now.toISOString(),
     }
     stompClient.publish({
-      destination: `/app/chat/send/${recruitId.value}`,
+      destination: `/app/chat/send/${roomId.value}`,
       body: JSON.stringify(payload),
     })
   }
@@ -191,7 +194,7 @@ const fetchInitialData = async () => {
 
     // API 병렬 호출
     const [historyData, participantsData, apiRideDetail] = await Promise.all([
-      recruitId.value ? api.getChatHistory(recruitId.value) : Promise.resolve([]),
+      roomId.value ? api.getChatHistory(roomId.value) : Promise.resolve([]),
       api.getChatParticipants(),
       !storeRideInfo ? api.getRideDetail() : Promise.resolve(null),
     ])
@@ -231,7 +234,7 @@ const fetchInitialData = async () => {
 // WebSocket 연결 설정
 const connectWebSocket = () => {
   if (stompClient && stompClient.active) return
-  if (!recruitId.value) return
+  if (!roomId.value) return
 
   const wsUri = import.meta.env.VITE_WS_URL
   stompClient = new Client({
@@ -239,7 +242,7 @@ const connectWebSocket = () => {
     reconnectDelay: 3000,
     onConnect: () => {
       isConnected.value = true
-      stompClient.subscribe(`/topic/chat/${recruitId.value}`, (message) => {
+      stompClient.subscribe(`/topic/chat/${roomId.value}`, (message) => {
         try {
           const parsedData = JSON.parse(message.body)
           const payload = parsedData.payload !== undefined ? parsedData.payload : parsedData
@@ -286,7 +289,7 @@ const handleSocketMessage = (data) => {
   if (data.type && ignoreTypes.includes(data.type)) return
 
   // 3. [방 번호 검사] recruitId가 있는데 내 방과 다르면 차단
-  if (data.recruitId && String(data.recruitId) !== String(recruitId.value)) return
+  if (data.recruitId && String(data.recruitId) !== String(roomId.value)) return
 
   // 4. [필수 데이터 검사] 채팅 메시지의 자격 요건 확인
   // 텍스트(contents)도 없고, 이미지(image) 타입도 아니면 채팅으로 인정하지 않음
@@ -377,6 +380,11 @@ const handleSocketMessage = (data) => {
  * ==============================================================================
  */
 onMounted(async () => {
+  const paramId = Number(route.params.id)
+  roomId.value = Number.isFinite(paramId) ? paramId : null
+  if (roomId.value && recruitId.value !== roomId.value) {
+    recruitId.value = roomId.value
+  }
   // 1. 내 정보 설정
   if (user.value) {
     myUserId.value = user.value.id || user.value.userId
@@ -392,6 +400,27 @@ onMounted(async () => {
   // 3. 웹소켓 연결
   connectWebSocket()
 })
+
+watch(
+  () => route.params.id,
+  async (nextId) => {
+    const paramId = Number(nextId)
+    roomId.value = Number.isFinite(paramId) ? paramId : null
+    if (roomId.value && recruitId.value !== roomId.value) {
+      recruitId.value = roomId.value
+    }
+
+    if (stompClient) {
+      stompClient.deactivate()
+      stompClient = null
+      isConnected.value = false
+    }
+
+    messages.value = []
+    await fetchInitialData()
+    connectWebSocket()
+  },
+)
 
 onUnmounted(() => {
   if (stompClient) {
