@@ -6,6 +6,7 @@
  */
 import { ref, reactive, onMounted, onUnmounted, provide } from 'vue'
 import { storeToRefs } from 'pinia'
+import { Client } from '@stomp/stompjs'
 
 // Stores & API
 import { useAuthStore } from '@/stores/auth'
@@ -38,7 +39,7 @@ provide('myUserName', myUserName)
  */
 // WebSocket 관련
 const isConnected = ref(false)
-let socket = null
+let stompClient = null
 
 // 사용자 정보
 const myUserId = ref(`user_${Math.floor(Math.random() * 1000)}`)
@@ -87,15 +88,15 @@ const handleSendMessage = (textToSend) => {
   })
 
   // 실제 서버 전송
-  if (socket && isConnected.value) {
+  if (stompClient && isConnected.value && recruitId.value) {
     const payload = {
-      userId: myUserId.value,
-      userName: myUserName.value,
-      userImg: myUserImg.value,
-      text: textToSend,
+      contents: textToSend,
       timestamp: now.toISOString(),
     }
-    socket.send(JSON.stringify(payload))
+    stompClient.publish({
+      destination: `/app/chat/send/${recruitId.value}`,
+      body: JSON.stringify(payload),
+    })
   } else {
     messages.value.push({
       id: Date.now() + 1,
@@ -120,16 +121,16 @@ const handleSendImage = (imageData) => {
   })
 
   // 2. 소켓 전송
-  if (socket && isConnected.value) {
+  if (stompClient && isConnected.value && recruitId.value) {
     const payload = {
       type: 'image',
-      userId: myUserId.value,
-      userName: myUserName.value,
-      userImg: myUserImg.value,
-      text: imageData,
+      contents: imageData,
       timestamp: now.toISOString(),
     }
-    socket.send(JSON.stringify(payload))
+    stompClient.publish({
+      destination: `/app/chat/send/${recruitId.value}`,
+      body: JSON.stringify(payload),
+    })
   }
 }
 
@@ -196,76 +197,40 @@ const fetchInitialData = async () => {
 
 // WebSocket 연결 설정
 const connectWebSocket = () => {
-  if (socket && socket.readyState === WebSocket.OPEN) return
+  if (stompClient && stompClient.active) return
+  if (!recruitId.value) return
 
   const wsUri = import.meta.env.VITE_WS_URL
-  socket = new WebSocket(wsUri)
-
-  // 연결 성공
-  socket.addEventListener('open', () => {
-    // console.log('WEBSOCKET CONNECTED')
-    isConnected.value = true
-
-    // 입장 메시지 전송
-    const enterMsg = {
-      type: 'enter',
-      userId: myUserId.value,
-      userName: myUserName.value,
-      userImg: myUserImg.value,
-      text: '입장했습니다.',
-      user: {
-        name: myUserName.value,
-        img: myUserImg.value,
-        lv: 'LV. 5', // TODO: 실제 데이터 연동
-        meta: '방금 접속',
-        bio: '반갑습니다!',
-        score: 50,
-        rank: '일반',
-        stats: { time: 0, silent: 0 },
-        reviews: [],
-      },
-    }
-    socket.send(JSON.stringify(enterMsg))
-
-    window.addEventListener('beforeunload', sendLeaveMessage)
+  stompClient = new Client({
+    brokerURL: wsUri,
+    reconnectDelay: 3000,
+    onConnect: () => {
+      isConnected.value = true
+      stompClient.subscribe(`/topic/chat/${recruitId.value}`, (message) => {
+        try {
+          const parsedData = JSON.parse(message.body)
+          const payload = parsedData.payload !== undefined ? parsedData.payload : parsedData
+          handleSocketMessage(payload)
+        } catch (err) {
+          handleSocketMessage(message.body)
+        }
+      })
+    },
   })
 
-  // 메시지 수신
-  socket.addEventListener('message', (e) => {
-    try {
-      const parsedData = JSON.parse(e.data)
-
-      // [수정 1] 글로벌 타입 필터링 (여기가 핵심입니다!)
-      // DriverPage에서 쓰는 타입들이 들어오면 아예 무시합니다.
-      const ignoreTypes = ['driverLocation', 'drivingPath', 'newRecruit', 'createRecruit']
-      if (parsedData.type && ignoreTypes.includes(parsedData.type)) return
-
-      // [수정 2] payload 추출
-      const payload = parsedData.payload !== undefined ? parsedData.payload : parsedData
-      handleSocketMessage(payload)
-    } catch (err) {
-      handleSocketMessage(e.data)
-    }
-  })
-
-  // 연결 종료
-  socket.addEventListener('close', () => {
-    // console.log('WEBSOCKET CLOSED')
+  stompClient.onWebSocketClose = () => {
     isConnected.value = false
-    window.removeEventListener('beforeunload', sendLeaveMessage)
-  })
+  }
 
-  // 에러 발생
-  socket.addEventListener('error', (err) => {
-    // console.error('WEBSOCKET ERROR', err)
+  stompClient.onStompError = () => {
     isConnected.value = false
-  })
+  }
+
+  stompClient.activate()
 }
 
 // 수신된 메시지 처리 핸들러
 const handleSocketMessage = (data) => {
-  if (!socket) return
-
   // 이중 인코딩 처리
   if (typeof data === 'string') {
     try {
@@ -291,9 +256,9 @@ const handleSocketMessage = (data) => {
   if (data.recruitId && String(data.recruitId) !== String(recruitId.value)) return
 
   // 4. [필수 데이터 검사] 채팅 메시지의 자격 요건 확인
-  // 텍스트(text)도 없고, 이미지(image) 타입도 아니면 채팅으로 인정하지 않음
+  // 텍스트(contents)도 없고, 이미지(image) 타입도 아니면 채팅으로 인정하지 않음
   // (이 부분이 없으면 {lat:37...} 같은 객체가 강제로 채팅창에 뜸)
-  const hasText = data.text || data.msg || data.message || data.content
+  const hasText = data.contents || data.text || data.msg || data.message || data.content
   const isSpecialType = ['image', 'enter', 'leave', 'system'].includes(data.type)
 
   if (!hasText && !isSpecialType) return
@@ -306,19 +271,19 @@ const handleSocketMessage = (data) => {
   let userId = 'Unknown'
   let userName = null
   let userImg = null
-  let msgType = data.type || 'other'
+  let msgType = data.type || 'message'
 
   if (typeof data === 'object' && data !== null) {
-    textContent = data.text || data.msg || data.message || data.content
+    textContent = data.contents || data.text || data.msg || data.message || data.content
     // [중요 수정] 텍스트가 없다고해서 JSON.stringify(data)를 하는 코드를 삭제했습니다.
     // 위 필터링을 통과했더라도 텍스트가 없으면 빈 문자열로 둡니다.
     if (!textContent && msgType !== 'image') {
        return // 텍스트도 없고 이미지도 아니면 그리지 않음
     }
-    
-    userId = data.userId || data.sender || 'Unknown'
-    userName = data.userName || data.name
-    userImg = data.userImg || data.img
+
+    userId = data.senderId || data.userId || data.writerIdx || data.sender || 'Unknown'
+    userName = data.senderName || data.userName || data.writer || data.name
+    userImg = data.senderImg || data.userImg || data.img
   } else {
     textContent = String(data)
   }
@@ -352,22 +317,7 @@ const handleSocketMessage = (data) => {
   }
 
   // 4. 입장(enter) 시 Handshake
-  if (msgType === 'enter') {
-    if (socket && isConnected.value) {
-      const existMsg = {
-        type: 'exist',
-        userId: myUserId.value,
-        userName: myUserName.value,
-        userImg: myUserImg.value,
-        text: '',
-      }
-      socket.send(JSON.stringify(existMsg))
-    }
-    return
-  }
-
-  // 5. exist 메시지 무시
-  if (msgType === 'exist') return
+  if (msgType === 'enter') return
 
   // 6. 메시지 목록 추가
   const senderInfo = usersData.value[userId] || usersData.value['Unknown']
@@ -388,17 +338,6 @@ const handleSocketMessage = (data) => {
 }
 
 // 퇴장 메시지 전송 (내부용)
-const sendLeaveMessage = () => {
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    const leaveMsg = {
-      type: 'leave',
-      userId: myUserId.value,
-      userName: myUserName.value,
-    }
-    socket.send(JSON.stringify(leaveMsg))
-  }
-}
-
 /**
  * ==============================================================================
  * 6. LIFECYCLE (생명주기 훅)
@@ -422,9 +361,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  sendLeaveMessage()
-  if (socket) {
-    socket.close()
+  if (stompClient) {
+    stompClient.deactivate()
   }
 })
 </script>
