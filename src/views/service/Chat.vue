@@ -104,6 +104,35 @@ const normalizeHistoryMessage = (item) => {
   }
 }
 
+const mapRecruitToRideInfo = (payload) => {
+  if (!payload) return null
+
+  const data = payload.result ?? payload
+  if (!data) return null
+
+  const startTime = data.departureTime ? formatTime(data.departureTime) : '--:--'
+
+  return {
+    driver: {
+      type: '모집자',
+      name: data.ownerName || '알 수 없음',
+      car: '-',
+      plate: '-',
+    },
+    route: {
+      start: data.startPointName || '...',
+      dest: data.destPointName || '...',
+      startTime,
+      endTime: startTime,
+    },
+    payment: {
+      status: '예상',
+      total: 0,
+      mine: 0,
+    },
+  }
+}
+
 /**
  * ==============================================================================
  * 4. METHODS - UI INTERACTION (화면 조작 및 기능 처리)
@@ -196,7 +225,7 @@ const fetchInitialData = async () => {
     const [historyResult, participantsResult, rideDetailResult] = await Promise.allSettled([
       roomId.value ? api.getChatHistory(roomId.value) : Promise.resolve([]),
       api.getChatParticipants(),
-      !storeRideInfo ? api.getRideDetail() : Promise.resolve(null),
+      !storeRideInfo && roomId.value ? api.getRideDetail(roomId.value) : Promise.resolve(null),
     ])
 
     if (historyResult.status === 'fulfilled') {
@@ -216,7 +245,7 @@ const fetchInitialData = async () => {
     const apiRideDetail = rideDetailResult.status === 'fulfilled' ? rideDetailResult.value : null
 
     // 스토어 데이터 우선 적용, 없으면 API 데이터 사용
-    rideInfo.value = storeRideInfo || apiRideDetail || null
+    rideInfo.value = storeRideInfo || mapRecruitToRideInfo(apiRideDetail) || null
 
     // Unknown 유저 안전장치
     if (!usersData.value['Unknown']) {
