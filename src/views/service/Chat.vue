@@ -69,6 +69,38 @@ const currentProfile = reactive({
   isBlocked: false,
 })
 
+const formatTime = (date) => {
+  const now = date instanceof Date ? date : new Date(date)
+  return `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
+const normalizeHistoryMessage = (item) => {
+  if (!item || typeof item !== 'object') return null
+
+  // 이미 UI 포맷이면 그대로 사용
+  if (item.text && ['me', 'other', 'system', 'date', 'image'].includes(item.type)) {
+    return item
+  }
+
+  const senderId = item.senderId || item.writerIdx || item.userId
+  const senderName = item.senderName || item.writer || item.userName
+  const contents = item.contents || item.text || item.message || item.content
+
+  if (!contents) return null
+
+  const isMe = String(senderId) === String(myUserId.value)
+  const timeSource = item.timestamp || item.createdAt || new Date()
+
+  return {
+    id: item.idx || item.id || Date.now() + Math.random(),
+    type: isMe ? 'me' : 'other',
+    userId: senderId || 'Unknown',
+    text: contents,
+    time: formatTime(timeSource),
+    user: senderName ? { name: senderName } : undefined,
+  }
+}
+
 /**
  * ==============================================================================
  * 4. METHODS - UI INTERACTION (화면 조작 및 기능 처리)
@@ -77,7 +109,7 @@ const currentProfile = reactive({
 // 메시지 전송 처리
 const handleSendMessage = (textToSend) => {
   const now = new Date()
-  const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
+  const timeStr = formatTime(now)
 
   // Optimistic Update (낙관적 업데이트)
   messages.value.push({
@@ -109,7 +141,7 @@ const handleSendMessage = (textToSend) => {
 // 이미지 전송 처리
 const handleSendImage = (imageData) => {
   const now = new Date()
-  const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
+  const timeStr = formatTime(now)
 
   // 1. 내 화면에 이미지 표시
   messages.value.push({
@@ -164,7 +196,8 @@ const fetchInitialData = async () => {
       !storeRideInfo ? api.getRideDetail() : Promise.resolve(null),
     ])
 
-    messages.value = historyData || []
+    const historyList = historyData?.result ?? historyData ?? []
+    messages.value = historyList.map(normalizeHistoryMessage).filter(Boolean)
     usersData.value = participantsData || {}
 
     // 스토어 데이터 우선 적용, 없으면 API 데이터 사용
@@ -265,7 +298,7 @@ const handleSocketMessage = (data) => {
   // ============================================================
 
   const now = new Date()
-  const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
+  const timeStr = formatTime(now)
 
   let textContent = ''
   let userId = 'Unknown'
@@ -329,7 +362,7 @@ const handleSocketMessage = (data) => {
 
   messages.value.push({
     id: Date.now() + Math.random(),
-    type: msgType,
+    type: msgType === 'message' ? 'other' : msgType,
     userId: userId,
     text: textContent,
     time: timeStr,
