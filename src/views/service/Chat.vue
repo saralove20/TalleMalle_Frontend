@@ -104,6 +104,31 @@ const normalizeHistoryMessage = (item) => {
   }
 }
 
+const normalizeParticipants = (payload) => {
+  const data = payload?.result ?? payload ?? []
+  if (!Array.isArray(data)) return {}
+
+  return data.reduce((acc, item) => {
+    const userId = item.userIdx || item.userId || item.id
+    const userName = item.userName || item.name
+    if (!userId || !userName) return acc
+    if (String(userId) === String(myUserId.value)) return acc
+
+    acc[userId] = {
+      name: userName,
+      img: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`,
+      lv: 'LV. 1',
+      meta: '참여 중',
+      bio: '',
+      score: 50,
+      rank: '-',
+      stats: { time: 0, silent: 0 },
+      reviews: [],
+    }
+    return acc
+  }, {})
+}
+
 const mapRecruitToRideInfo = (payload) => {
   if (!payload) return null
 
@@ -224,7 +249,7 @@ const fetchInitialData = async () => {
     // API 병렬 호출 (부분 실패 허용)
     const [historyResult, participantsResult, rideDetailResult] = await Promise.allSettled([
       roomId.value ? api.getChatHistory(roomId.value) : Promise.resolve([]),
-      api.getChatParticipants(),
+      roomId.value ? api.getChatParticipants(roomId.value) : Promise.resolve([]),
       !storeRideInfo && roomId.value ? api.getRideDetail(roomId.value) : Promise.resolve(null),
     ])
 
@@ -240,7 +265,7 @@ const fetchInitialData = async () => {
     }
 
     usersData.value =
-      participantsResult.status === 'fulfilled' ? participantsResult.value || {} : {}
+      participantsResult.status === 'fulfilled' ? normalizeParticipants(participantsResult.value) : {}
 
     const apiRideDetail = rideDetailResult.status === 'fulfilled' ? rideDetailResult.value : null
 
