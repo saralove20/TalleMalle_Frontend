@@ -28,8 +28,8 @@ const getChatParticipants = async () => {
  * 여정 상세 정보 가져오기
  * @returns {Promise<Object>} 여정 정보 객체
  */
-const getRideDetail = async () => {
-  const response = await api.get('/json/ride_detail')
+const getRideDetail = async (recruitId) => {
+  const response = await api.get(`/recruits/${recruitId}`)
   return response.data
 }
 
