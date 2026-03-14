@@ -334,7 +334,7 @@ const handleSocketMessage = (data) => {
   }
 
   // 2. 내가 보낸 메시지 무시
-  if (userId === myUserId.value) return
+  if (String(userId) === String(myUserId.value)) return
 
   // 3. 유저 정보 갱신/등록
   if (userId !== 'Unknown' && !usersData.value[userId]) {
@@ -387,7 +387,7 @@ onMounted(async () => {
   }
   // 1. 내 정보 설정
   if (user.value) {
-    myUserId.value = user.value.id || user.value.userId
+    myUserId.value = user.value.idx || user.value.id || user.value.userId
     myUserName.value = user.value.name || user.value.nickname || user.value.userName || '익명'
     myUserImg.value = user.value.img || user.value.profileImage || user.value.userImg || ''
   } else {
