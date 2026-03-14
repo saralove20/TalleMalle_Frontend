@@ -11,7 +11,11 @@ import api from '@/plugins/axiosinterceptor'
  * ==============================================================================
  */
 const getRecruitList = async () => {
-    return await api.get('/json/recruit_list')
+    return await api.get('/recruit')
+}
+
+const registerRecruit = async (data) => {
+    return await api.post('/recruit', data)
 }
 
 /**
@@ -20,5 +24,5 @@ const getRecruitList = async () => {
  * ==============================================================================
  */
 export default {
-    getRecruitList
+    getRecruitList, registerRecruit
 }
