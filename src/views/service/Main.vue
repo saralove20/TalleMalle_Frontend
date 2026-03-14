@@ -206,7 +206,19 @@ const handleCreateSubmit = async (formData) => {
   }
 
   try {
-    await api.registerRecruit(reqData)
+    console.log('백엔드로 전송되는 모집글 데이터:', reqData)
+    const res = await api.registerRecruit(reqData)
+
+    const newRecruit = res.data.result
+
+    if (newRecruit && newRecruit.idx) {
+      recruitStore.setOwner(newRecruit.idx)
+      displayRoute.value = `${newRecruit.startPointName} → ${newRecruit.destPointName}`
+
+      if (authStore.user) {
+        authStore.user.status = 'OWNER'
+      }
+    }
 
     isCreateModalOpen.value = false
     alert("모집이 시작되었습니다!")

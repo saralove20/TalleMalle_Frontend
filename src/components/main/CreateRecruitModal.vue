@@ -38,7 +38,7 @@ const form = ref({
     time: 'Now',
     maxMember: 3,
     tags: '',
-    desc: ''
+    description: ''
 })
 
 /**
@@ -70,7 +70,7 @@ const handleDestSelect = (location) => {
 // 폼 제출 핸들러
 const handleFormSubmit = () => {
     // 구조 분해 할당으로 폼 데이터 가져오기
-    const { start, startLat, startLng, dest, destLat, destLng, time, maxMember, tags, desc } = form.value
+    const { start, startLat, startLng, dest, destLat, destLng, time, maxMember, tags, description } = form.value
 
     // 유효성 검사 (좌표가 있는지까지 확인하면 더 좋음)
     if (!start || !dest) {
@@ -97,7 +97,7 @@ const handleFormSubmit = () => {
         time,
         max: maxMember,
         tags: tagArray,
-        desc
+        description
     })
 }
 </script>
@@ -133,7 +133,7 @@ const handleFormSubmit = () => {
 
                     <TagInput label="태그 (선택)" v-model="form.tags" placeholder="예: #비흡연 #여성전용" />
 
-                    <Textarea label="하고 싶은 말" v-model="form.desc" placeholder="예: 짐이 조금 있어요" />
+                    <Textarea label="하고 싶은 말" v-model="form.description" placeholder="예: 짐이 조금 있어요" />
                 </div>
 
                 <div class="p-6 border-t border-slate-100 bg-white">
