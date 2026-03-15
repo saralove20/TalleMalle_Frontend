@@ -2,8 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useRecruitStore } from '@/stores/recruit'
 import Main from '@/views/service/Main.vue'
 import Login from '@/views/auth/Login.vue'
+import SocialLoginSuccess from '@/views/auth/SocialLoginSuccess.vue'
 import Signup from '@/views/auth/Signup.vue'
 import SignupOldVersion from '@/views/auth/SignupOldVersion.vue'
+import signupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
 import Chat from '@/views/service/Chat.vue'
 import MyPage from '@/views/user/MyPage.vue'
 import FindPassword from '@/views/auth/FindPassword.vue'
@@ -63,7 +65,19 @@ const router = createRouter({
     { path: '/privacy', name: 'privacy', component: Privacy, meta: { requiresAuth: true } },
     // hideNavbar: true 로그인 페이지에선 사이드바 숨김
     { path: '/login', name: 'login', component: Login, meta: { hideNavbar: true } },
+    {
+      path: '/social/success',
+      name: 'SocialLoginSuccess',
+      component: SocialLoginSuccess,
+      meta: { hideNavbar: true },
+    },
     { path: '/signup', name: 'signup', component: Signup, meta: { hideNavbar: true } },
+    {
+      path: '/signup/extra',
+      name: 'signupExtraInfo',
+      component: signupExtraInfo,
+      meta: { hideNavbar: true },
+    },
     {
       path: '/findpassword',
       name: 'findpassword',
@@ -115,11 +129,17 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const recruitStore = useRecruitStore()
   const user = localStorage.getItem('USERINFO')
+  const hasToken = document.cookie.includes('ATOKEN')
   const myStatus = localStorage.getItem('myStatus')
 
+  console.log('체크 결과 - 유저정보:', !!user, '토큰존재:', hasToken)
+
   // 로그인 체크 (requiresAuth)
-  if (to.meta.requiresAuth && !user) {
+  if (to.meta.requiresAuth && !user && !hasToken) {
+    alert('로그인이 필요한 서비스입니다.')
     next('/login')
+  } else {
+    return next()
   }
 
   // 참여 상태 체크
