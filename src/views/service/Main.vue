@@ -226,14 +226,30 @@ const handleCreateSubmit = async (formData) => {
     console.log("🚨 모집글 등록 에러 발생 : ", error)
     alert("모집글 등록 중 오류가 발생했습니다. 다시 시도해주세요.")
   }
+}
 
+// 모집글 나가기 함수
+const handleLeaveRecruit = async () => {
+  if (!confirm("정말 이 모집에서 나가시겠습니까?")) return;
+
+  try {
+    const res = await api.leaveRecruit(selectedRecruit.value.id);
+    if (res.data.result) {
+      alert("성공적으로 방에서 나왔습니다.");
+      // ⭐️ API 성공 시 스토어 수동 초기화 보장
+      recruitStore.clear();
+      if (authStore.user) authStore.user.status = 'IDLE';
+    }
+  } catch (e) {
+    alert("오류가 발생했습니다.");
+  }
 }
 
 // 모집글 등록 시 상태 동기화 함수
 const syncRecruitStatus = () => {
   const user = authStore.user
 
-  console.log(user.status)
+  console.log('현재 유저 상태:', user?.status)
 
   // 상태가 없거나 IDLE면 그냥 return
   if (!user || !user.idx) {
@@ -410,13 +426,23 @@ const handleSocketMessage = (event) => {
 
     // 모집글 삭제 (방장이 폭파했을 때)
     else if (realType === 'deleteRecruit' && realPayload) {
-      const deletedId = realPayload
+      const deletedId = Number(realPayload)
+
+      if (myRecruitId.value === deletedId) {
+        alert("방장에 의해 모집이 취소되어 대기 상태로 전환합니다.")
+      }
+
+      // 리스트에서 해당 방 제거
       recruitList.value = recruitList.value.filter(r => r.id !== deletedId)
 
+      // 상세 패널을 열어서 보고있는 경우 
       if (selectedRecruit.value?.id === deletedId) {
         isDetailOpen.value = false
         selectedRecruit.value = null
-        alert("방장에 의해 모집이 취소되었습니다.")
+
+        if (myRecruitId.value !== deletedId) {
+          alert("방장에 의해 모집이 취소되었습니다.")
+        }
       }
     }
 
