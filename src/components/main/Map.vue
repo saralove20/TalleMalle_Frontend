@@ -107,52 +107,69 @@ const handleUpdateVisibleMarkers = () => {
 const handleUpdateRecruitMarkers = () => {
     if (!mapInstance.value) return
 
-    // 새로운 데이터의 ID 목록을 Set으로 만들기
     const newRecruitIds = new Set(props.recruitList.map(r => r.id))
 
-    // 리스트에 없는 마커 제거
-    // recruitMarkers Map을 순회하면서 검사
+    // 1. 리스트에 없는 마커 지도에서 제거
     for (const [id, marker] of recruitMarkers.value) {
         if (!newRecruitIds.has(id)) {
-            // 지도에서 제거
             marker.setMap(null)
-            // 메모리에서 제거
             recruitMarkers.value.delete(id)
         }
     }
 
-    // 리스트에는 있는데 맵에 없는 마커 생성
+    // 2. 마커 생성 및 갱신 (직접 DOM 조작 방식)
     props.recruitList.forEach(recruit => {
-        // 이미 존재하는 마커면 건너뛰기
-        if (recruitMarkers.value.has(recruit.id)) return
-        // 좌표 유효성 검사
         if (!recruit.startLat || !recruit.startLng) return
 
+        // ⭐️ HTML 내용을 그려주는 헬퍼 함수
+        const updateNodeContent = (node, r) => {
+            const isFull = r.cur >= r.max
+            const bgColor = isFull ? '#64748b' : '#f43f5e'
+            node.innerHTML = `
+                <div class="pin-head" style="background-color: ${bgColor}; border-color: white;">
+                    <span class="text-xs font-bold">${r.cur}/${r.max}</span>
+                </div>
+                <div class="pin-tail" style="border-top-color: ${bgColor};"></div>
+            `
+        }
+
+        // ⭐️ [핵심] 이미 지도에 있는 마커라면?
+        if (recruitMarkers.value.has(recruit.id)) {
+            const existingOverlay = recruitMarkers.value.get(recruit.id)
+            // 1) 클릭 시 옛날 데이터가 안 뜨도록 최신 데이터 갱신
+            existingOverlay.recruitData = recruit
+            // 2) 카카오맵 렌더링 무시하고 브라우저 HTML 노드에 직접 새 숫자 덮어쓰기! (깜빡임 절대 없음)
+            updateNodeContent(existingOverlay.contentNode, recruit)
+            return // 새로 만들지 않고 여기서 종료
+        }
+
+        // 지도에 없는 새 마커라면 새로 만들기
+        const contentNode = document.createElement('div')
+        contentNode.className = 'marker-pin'
+        updateNodeContent(contentNode, recruit)
+
         const loc = new window.kakao.maps.LatLng(recruit.startLat, recruit.startLng)
-
-        // 마커 디자인 (HTML)
-        const content = document.createElement('div')
-        content.className = 'marker-pin'
-        content.innerHTML = `
-            <div class="pin-head"><span class="text-xs font-bold">${recruit.cur}/${recruit.max}</span></div>
-            <div class="pin-tail"></div>
-        `
-        // 마커 클릭 시 이벤트 발생
-        content.addEventListener('click', () => emit('marker-click', recruit))
-
-        // 지도에 표시하고 Map에 저장
         const overlay = new window.kakao.maps.CustomOverlay({
             position: loc,
-            content: content,
+            content: contentNode,
             yAnchor: 1,
             zIndex: 50
         })
 
-        // 지도에 표시하고 Map에 저장
+        // 오버레이 객체에 중요한 정보들을 다 저장해둡니다.
+        overlay.recruitId = recruit.id
+        overlay.recruitData = recruit // 클릭 이벤트를 위한 최신 데이터
+        overlay.contentNode = contentNode // ⭐️ 이 DOM 노드 주소값을 기억해둬야 나중에 바로 뜯어고칩니다!
+
+        // 클릭 이벤트 (항상 overlay 안에 저장된 최신 데이터를 부모로 올리게 세팅)
+        contentNode.addEventListener('click', () => {
+            emit('marker-click', overlay.recruitData)
+        })
+
         overlay.setMap(mapInstance.value)
-        overlay.recruitId = recruit.id // visible 체크용 ID 주입
         recruitMarkers.value.set(recruit.id, overlay)
     })
+
     // 보이는 목록 갱신
     handleUpdateVisibleMarkers()
 }
@@ -254,7 +271,8 @@ const initializeGeolocation = () => {
 }
 
 // recruitList가 변하면(글이 추가되면) 마커를 다시 그립니다.
-watch(() => props.recruitList, () => {
+watch(() => props.recruitList, (newList) => {
+    console.log('👀 [Map.vue] 데이터 변경 감지! 마커 내용 덮어쓰기 실행!', newList)
     handleUpdateRecruitMarkers()
 }, { deep: true })
 
