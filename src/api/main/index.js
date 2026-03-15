@@ -22,11 +22,19 @@ const joinRecruit = async (recruitIdx) => {
     return await api.post(`/recruit/join/${recruitIdx}`)
 }
 
+const leaveRecruit = async (recruitIdx) => {
+    return await api.delete(`/recruit/${recruitIdx}/leave`)
+}
+
+const searchRecruits = async (params) => {
+    return await api.get("/recruit/search", { params })
+}
+
 /**
  * ==============================================================================
  * 3. EXPORT
  * ==============================================================================
  */
 export default {
-    getRecruitList, registerRecruit, joinRecruit
+    getRecruitList, registerRecruit, joinRecruit, searchRecruits, leaveRecruit
 }

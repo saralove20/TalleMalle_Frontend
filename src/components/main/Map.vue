@@ -19,7 +19,7 @@ const props = defineProps({
     centerOffset: { type: Number, default: 0 }
 })
 
-const emit = defineEmits(['update-location', 'marker-click', 'update-visible-list'])
+const emit = defineEmits(['update-location', 'marker-click', 'update-visible-list', 'bounds-changed'])
 
 /**
  * ==============================================================================
@@ -43,6 +43,39 @@ const lng = ref(127.02761)
  * 4. METHODS - UI & LOGIC (기능 처리 및 이벤트 핸들러)
  * ==============================================================================
  */
+// 카카오 장소 검색
+const searchPlace = (keyword) => {
+    if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
+        alert('카카오맵 서비스 라이브러리가 로드되지 않았습니다. (index.html 확인 필요)')
+        return
+    }
+
+    // 장소 검색 객체를 생성합니다
+    const ps = new window.kakao.maps.services.Places()
+
+    // 키워드로 장소를 검색합니다
+    ps.keywordSearch(keyword, (data, status) => {
+        if (status === window.kakao.maps.services.Status.OK) {
+            // 검색된 첫 번째 결과의 좌표
+            const targetLat = data[0].y
+            const targetLng = data[0].x
+
+            // 1. 지도 중심을 부드럽게 이동 (오프셋 적용)
+            handleMoveWithOffset(targetLat, targetLng)
+
+            // 2. 동네가 잘 보이도록 줌 레벨 살짝 당겨주기 (선택 사항)
+            if (mapInstance.value) {
+                mapInstance.value.setLevel(4)
+            }
+
+        } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
+            alert('검색 결과가 존재하지 않습니다.')
+        } else if (status === window.kakao.maps.services.Status.ERROR) {
+            alert('검색 중 오류가 발생했습니다.')
+        }
+    })
+}
+
 // 오프셋을 적용한 좌표 이동 핸들러
 // 지도 중심 이동 (오프셋 적용)
 const handleMoveWithOffset = (targetLat, targetLng) => {
@@ -296,7 +329,23 @@ onMounted(() => {
 
         initializeGeolocation()
 
-        window.kakao.maps.event.addListener(mapInstance.value, 'idle', handleUpdateVisibleMarkers)
+        window.kakao.maps.event.addListener(mapInstance.value, 'idle', () => {
+            handleUpdateVisibleMarkers()
+
+            // 현재 지도의 경계 영역 좌표 구하기
+            const bounds = mapInstance.value.getBounds()
+            const swLatLng = bounds.getSouthWest()
+            const neLatLng = bounds.getNorthEast()
+
+            // 부모(Main.vue)에게 좌표 보내기
+            emit('bounds-changed', {
+                swLat: swLatLng.getLat(),
+                swLng: swLatLng.getLng(),
+                neLat: neLatLng.getLat(),
+                neLng: neLatLng.getLng()
+            })
+        })
+
         if (props.recruitList.length > 0) {
             handleUpdateRecruitMarkers()
         }
@@ -325,7 +374,8 @@ defineExpose({
     panToCurrent: handlePanToCurrent,
     moveToLocation: handleMoveToLocation,
     updateDriverMarker: handleUpdateDriverMarker,
-    drawPath: handleDrawPath
+    drawPath: handleDrawPath,
+    searchPlace
 })
 </script>
 
