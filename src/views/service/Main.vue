@@ -203,6 +203,13 @@ const handleCreateSubmit = async (formData) => {
     return
   }
 
+  // 오늘 날짜 객체 생성 후, 입력받은 시간('HH:mm') 세팅
+  const targetDate = new Date()
+  if (formData.time) {
+    const [hours, minutes] = formData.time.split(':')
+    targetDate.setHours(Number(hours), Number(minutes), 0, 0)
+  }
+
   // formData를 백엔드 Dto에 맞게 변환
   const reqData = {
     startPointName: formData.startPoint || formData.start,
@@ -211,10 +218,9 @@ const handleCreateSubmit = async (formData) => {
     destPointName: formData.destPoint || formData.dest,
     destLat: formData.destLat,
     destLng: formData.destLng,
-    departureTime: new Date().toISOString(),
+    departureTime: targetDate.toISOString(),
     maxCapacity: formData.max || 4,
     description: formData.description,
-    tags: []
   }
 
   try {
@@ -320,12 +326,12 @@ let mapSearchTimeout = null
 
 // 화면 기반 모집글 검색 핸들러
 const handleSearchRecruits = (bounds) => {
-  // 1. 디바운싱: 0.3초 안에 다시 요청이 오면 기존 요청 취소!
+  // 디바운싱: 0.3초 안에 다시 요청이 오면 기존 요청 취소!
   if (mapSearchTimeout) clearTimeout(mapSearchTimeout)
 
   mapSearchTimeout = setTimeout(async () => {
     try {
-      // 2. 백엔드 API 호출
+      //  백엔드 API 호출
       const res = await api.searchRecruits(bounds)
       const targetData = res.data.result
 
@@ -342,7 +348,7 @@ const handleSearchRecruits = (bounds) => {
           max: item.maxCapacity
         }))
 
-        // 🚨 [초특급 방어 로직] 내 방이 화면 밖으로 나가서 잘렸을 경우를 대비해 '내 방' 정보는 강제 유지시킵니다!
+        // 내 방이 화면 밖으로 나가서 잘렸을 경우를 대비해 내 방 정보는 강제 유지
         if (myRecruitId.value) {
           const myRoom = recruitList.value.find(r => r.id === myRecruitId.value)
           // 새로 받아온 데이터(화면 안)에 내 방이 없다면 배열에 끼워 넣기
@@ -351,7 +357,7 @@ const handleSearchRecruits = (bounds) => {
           }
         }
 
-        // 3. 리스트 갈아끼우기 (watch 발동 -> 상태 재검사 -> 마커 다시 그림)
+        // 리스트 갈아끼우기 (watch 발동 -> 상태 재검사 -> 마커 다시 그림)
         recruitList.value = mappedData.filter((item) => item.startLat && item.startLng)
 
         console.log('✅ [프론트엔드] 화면에 그려질 최종 방 목록:', recruitList.value)

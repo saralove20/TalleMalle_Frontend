@@ -38,9 +38,9 @@ const handleClick = () => {
 
         <p class="font-bold text-slate-800">{{ item.start }} → {{ item.dest }}</p>
 
-        <div class="flex gap-1 mt-2">
+        <div class="flex flex-wrap gap-2">
             <span v-for="tag in (item.tags || [])" :key="tag"
-                class="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                class="text-[11px] font-bold border border-slate-100 px-4 py-2 rounded-xl bg-white shadow-sm">
                 {{ tag }}
             </span>
         </div>
