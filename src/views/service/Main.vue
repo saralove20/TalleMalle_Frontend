@@ -116,6 +116,18 @@ const formatTime = (dateString) => {
   return `${month}월 ${day}일 ${hours}:${minutes}`
 }
 
+// 출발지 키워드 검색 핸들러
+const handleKeywordSearch = (keyword) => {
+  if (!keyword || !keyword.trim()) {
+    alert("검색어를 입력해주세요")
+    return
+  }
+
+  if (mapComponent.value) {
+    mapComponent.value.searchPlace(keyword)
+  }
+}
+
 // 리스트 패널 토글 핸들러
 const handleToggleListPanel = () => {
   isListPanelOpen.value = !isListPanelOpen.value
@@ -555,7 +567,8 @@ onMounted(async () => {
           <div v-show="isListPanelOpen"
             class="pointer-events-auto h-full shadow-xl z-20 ml-4 rounded-3xl overflow-hidden">
             <RecruitListPanel :recruit-list="displayRecruitList" :is-open="true" :selected-id="selectedRecruit?.id"
-              :is-socket-connected="isConnected" @expand="isPanelOpen = true" @select="handleSelectRecruit" />
+              :is-socket-connected="isConnected" @expand="isPanelOpen = true" @select="handleSelectRecruit"
+              @search="handleKeywordSearch" />
           </div>
         </Transition>
 
