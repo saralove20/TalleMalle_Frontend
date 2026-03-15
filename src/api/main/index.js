@@ -18,11 +18,15 @@ const registerRecruit = async (data) => {
     return await api.post('/recruit', data)
 }
 
+const joinRecruit = async (recruitIdx) => {
+    return await api.post(`/recruit/join/${recruitIdx}`)
+}
+
 /**
  * ==============================================================================
  * 3. EXPORT
  * ==============================================================================
  */
 export default {
-    getRecruitList, registerRecruit
+    getRecruitList, registerRecruit, joinRecruit
 }
