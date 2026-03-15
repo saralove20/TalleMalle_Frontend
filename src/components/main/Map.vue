@@ -19,7 +19,7 @@ const props = defineProps({
     centerOffset: { type: Number, default: 0 }
 })
 
-const emit = defineEmits(['update-location', 'marker-click', 'update-visible-list'])
+const emit = defineEmits(['update-location', 'marker-click', 'update-visible-list', 'bounds-changed'])
 
 /**
  * ==============================================================================
@@ -296,7 +296,23 @@ onMounted(() => {
 
         initializeGeolocation()
 
-        window.kakao.maps.event.addListener(mapInstance.value, 'idle', handleUpdateVisibleMarkers)
+        window.kakao.maps.event.addListener(mapInstance.value, 'idle', () => {
+            handleUpdateVisibleMarkers()
+
+            // 현재 지도의 경계 영역 좌표 구하기
+            const bounds = mapInstance.value.getBounds()
+            const swLatLng = bounds.getSouthWest()
+            const neLatLng = bounds.getNorthEast()
+
+            // 부모(Main.vue)에게 좌표 보내기
+            emit('bounds-changed', {
+                swLat: swLatLng.getLat(),
+                swLng: swLatLng.getLng(),
+                neLat: neLatLng.getLat(),
+                neLng: neLatLng.getLng()
+            })
+        })
+
         if (props.recruitList.length > 0) {
             handleUpdateRecruitMarkers()
         }

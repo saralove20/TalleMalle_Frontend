@@ -324,6 +324,56 @@ const handleMoveToCurrentLocation = () => mapComponent.value?.panToCurrent()
  * 6. METHODS - DATA & NETWORK (데이터 통신 및 소켓)
  * ==============================================================================
  */
+// 타이머 변수 선언 (디바운싱용)
+let mapSearchTimeout = null
+
+// 화면 기반 모집글 검색 핸들러
+const handleSearchRecruits = (bounds) => {
+  // 1. 디바운싱: 0.3초 안에 다시 요청이 오면 기존 요청 취소!
+  if (mapSearchTimeout) clearTimeout(mapSearchTimeout)
+
+  mapSearchTimeout = setTimeout(async () => {
+    try {
+      // 2. 백엔드 API 호출
+      const res = await api.searchRecruits(bounds)
+      const targetData = res.data.result
+
+      console.log('📍 [화면 이동] 백엔드에서 불러온 방 목록:', targetData)
+
+      if (Array.isArray(targetData)) {
+        let mappedData = targetData.map((item) => ({
+          ...item,
+          id: item.idx,
+          start: item.startPointName,
+          dest: item.destPointName,
+          time: formatTime(item.departureTime),
+          cur: item.currentCapacity,
+          max: item.maxCapacity
+        }))
+
+        // 🚨 [초특급 방어 로직] 내 방이 화면 밖으로 나가서 잘렸을 경우를 대비해 '내 방' 정보는 강제 유지시킵니다!
+        if (myRecruitId.value) {
+          const myRoom = recruitList.value.find(r => r.id === myRecruitId.value)
+          // 새로 받아온 데이터(화면 안)에 내 방이 없다면 배열에 끼워 넣기
+          if (myRoom && !mappedData.find(r => r.id === myRoom.id)) {
+            mappedData.push(myRoom)
+          }
+        }
+
+        // 3. 리스트 갈아끼우기 (watch 발동 -> 상태 재검사 -> 마커 다시 그림)
+        recruitList.value = mappedData.filter((item) => item.startLat && item.startLng)
+
+        console.log('✅ [프론트엔드] 화면에 그려질 최종 방 목록:', recruitList.value)
+      } else {
+        recruitList.value = []
+      }
+
+    } catch (error) {
+      console.error("지도 검색 에러:", error)
+    }
+  }, 300) // 0.3초 대기
+}
+
 // 모집 리스트 조회 (API)
 const fetchRecruits = async () => {
   isLoading.value = true
@@ -482,7 +532,7 @@ onMounted(async () => {
   connect(wsUrl, handleSocketMessage)
 
   // 초기 데이터 로드
-  await fetchRecruits()
+  // await fetchRecruits()
 
   // 유저의 Status 확인
   syncRecruitStatus()
@@ -495,7 +545,7 @@ onMounted(async () => {
   <div class="relative w-full h-full">
     <Map ref="mapComponent" :recruit-list="recruitList" :center-offset="mapCenterOffset"
       @update-location="handleLocationUpdate" @marker-click="handleSelectRecruit"
-      @update-visible-list="handleVisibleListUpdate" />
+      @update-visible-list="handleVisibleListUpdate" @bounds-changed="handleSearchRecruits" />
 
     <div class="absolute inset-0 z-10 flex p-4 pointer-events-none">
       <div class="hidden md:block w-20 shrink-0 h-full"></div>
