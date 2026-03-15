@@ -4,116 +4,26 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios'
-import { useAuthStore } from '@/stores/auth'
 import { MessageCircle } from 'lucide-vue-next'
 
 /**
  * ==============================================================================
- * 2. CONFIG & STORES (설정 및 키값)
+ * 2. METHODS - FUNCTIONAL (백엔드 OAuth2 입구로 연결)
  * ==============================================================================
  */
-const router = useRouter()
-const authStore = useAuthStore()
+const backendUrl = import.meta.env.VITE_API_BASE_URL
 
-// 환경 변수 설정
-const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_MAP_KEY // 카카오 SDK 키 (실제 키로 교체 필요)
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID // 구글 CLIENT 키 (실제 키로 교체 필요)
-
-let googleTokenClient = null
-
-/**
- * ==============================================================================
- * 4. METHODS - FUNCTIONAL (기능 및 UI 로직)
- * ==============================================================================
- */
 // 카카오 로그인 실행
 const loginWithKakao = () => {
-  // 프론트엔드 SDK를 사용하는 대신, 백엔드의 OAuth2 입구로 브라우저를 이동시킵니다.
+  // 백엔드의 OAuth2 입구로 브라우저를 이동시킵니다.
   // 이 주소로 접속해야 Spring Security가 가로채서 카카오 로그인 페이지를 띄워줍니다.
-  const backendUrl = 'http://localhost:8080'
-  window.location.href = `${backendUrl}/oauth2/authorization/kakao`
+  window.location.href = `${backendUrl}oauth2/authorization/kakao`
 }
 
 // 구글 로그인 실행
 const loginWithGoogle = () => {
-  if (googleTokenClient) {
-    googleTokenClient.requestAccessToken()
-  } else {
-    alert('구글 로그인을 준비 중입니다. 잠시 후 다시 시도해주세요.')
-  }
+  window.location.href = `${backendUrl}oauth2/authorization/google`
 }
-
-/**
- * ==============================================================================
- * 5. METHODS - API SERVICE METHODS (소셜 API 연동)
- * ==============================================================================
- */
-// 구글 사용자 정보 가져오기 및 로그인 처리
-const fetchGoogleUserInfo = async (accessToken) => {
-  try {
-    const res = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-    const user = res.data
-
-    // 스토어에 로그인 정보 저장
-    authStore.login({
-      name: user.name,
-      email: user.email,
-      img: user.picture,
-      type: 'google',
-    })
-
-    alert(`${user.name}님 환영합니다!`)
-    router.push('/')
-  } catch (error) {
-    // console.error('구글 로그인 에러:', error)
-    alert('구글 로그인 중 오류가 발생했습니다.')
-  }
-}
-
-/**
- * ==============================================================================
- * 6. LIFECYCLE (생명주기 훅)
- * ==============================================================================
- */
-onMounted(() => {
-  // 카카오 SDK 초기화
-  if (!window.Kakao) {
-    const script = document.createElement('script')
-    script.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.7.1/kakao.min.js'
-    script.integrity = 'sha384-kDljxUXHaJ9xAb2AzRd59KxjrFjzHa5TAoFQ6GbYTCAG0bjM55XohjjDT7tDDC01'
-    script.crossOrigin = 'anonymous'
-    script.onload = () => {
-      if (!window.Kakao.isInitialized()) {
-        window.Kakao.init(KAKAO_API_KEY)
-      }
-    }
-    document.head.appendChild(script)
-  }
-
-  // 구글 로그인 클라이언트 초기화
-  const initGoogle = () => {
-    if (window.google) {
-      googleTokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope:
-          'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-        callback: async (response) => {
-          if (response.access_token) {
-            await fetchGoogleUserInfo(response.access_token)
-          }
-        },
-      })
-    } else {
-      setTimeout(initGoogle, 500)
-    }
-  }
-  initGoogle()
-})
 </script>
 
 <template>
