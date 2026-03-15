@@ -263,51 +263,30 @@ const syncRecruitStatus = () => {
 
   console.log('현재 유저 상태:', user?.status)
 
-  // 상태가 없거나 IDLE면 그냥 return
   if (!user || !user.idx) {
     return
   }
 
   const myIdx = user.idx
 
-  let foundStatus = "IDLE"
-  let foundRoomIdx = null
-  let foundRoute = "경로 미지정"
-
   // 전체 모집글 리스트를 순회하며 내가 어디 속해있는지 찾기
   for (const room of recruitList.value) {
     // 방장이면
     if (room.ownerId === myIdx) {
-      foundStatus = "OWNER"
-      foundRoomIdx = room.id
-      foundRoute = `${room.start} → ${room.dest}`
-      break // 찾았으면 순회 종료
+      recruitStore.setOwner(room.id)
+      displayRoute.value = `${room.start} → ${room.dest}`
+      user.status = 'OWNER'
+      return
     }
 
-    // 2. 참여자이면
+    // 참여자이면
     const isParticipant = room.participationList?.some(p => p.userIdx === myIdx || p.useridx === myIdx)
-
     if (isParticipant) {
-      foundStatus = "JOINED"
-      foundRoomIdx = room.id
-      foundRoute = `${room.start} → ${room.dest}`
-      break
+      recruitStore.setJoined(room.id)
+      displayRoute.value = `${room.start} → ${room.dest}`
+      user.status = 'JOINED'
+      return
     }
-  }
-
-  // 찾은 결과(팩트)를 바탕으로 스토어 및 UI 즉시 업데이트!
-  if (foundStatus === 'OWNER') {
-    recruitStore.setOwner(foundRoomIdx)
-    displayRoute.value = foundRoute
-    user.status = 'OWNER'
-  } else if (foundStatus === 'JOINED') {
-    recruitStore.setJoined(foundRoomIdx)
-    displayRoute.value = foundRoute
-    user.status = 'JOINED'
-  } else {
-    recruitStore.clear()
-    displayRoute.value = '경로 미지정'
-    user.status = 'IDLE'
   }
 }
 
@@ -492,6 +471,10 @@ const handleSocketMessage = (event) => {
 
       if (myRecruitId.value === deletedId) {
         alert("방장에 의해 모집이 취소되어 대기 상태로 전환합니다.")
+        recruitStore.clear()
+        if (authStore.user) {
+          authStore.user.status = "IDLE"
+        }
       }
 
       // 리스트에서 해당 방 제거
