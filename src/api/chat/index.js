@@ -37,4 +37,8 @@ export default {
   getChatHistory,
   getChatParticipants,
   getRideDetail,
+  subscribePush: async (payload) => {
+    const response = await api.post('/push/subscribe', payload)
+    return response.data
+  },
 }

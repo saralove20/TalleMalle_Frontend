@@ -158,6 +158,38 @@ const mapRecruitToRideInfo = (payload) => {
   }
 }
 
+const urlBase64ToUint8Array = (base64String) => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
+const registerPushSubscription = async () => {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+  const permission = await Notification.requestPermission()
+  if (permission !== 'granted') return
+
+  const registration = await navigator.serviceWorker.register('/sw.js')
+  const existing = await registration.pushManager.getSubscription()
+
+  const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY
+  if (!vapidKey) return
+
+  const subscription =
+    existing ||
+    (await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey),
+    }))
+
+  await api.subscribePush(subscription.toJSON())
+}
+
 /**
  * ==============================================================================
  * 4. METHODS - UI INTERACTION (화면 조작 및 기능 처리)
@@ -459,6 +491,9 @@ onMounted(async () => {
 
   // 3. 웹소켓 연결
   connectWebSocket()
+
+  // 4. 푸시 구독 등록
+  registerPushSubscription()
 })
 
 watch(
