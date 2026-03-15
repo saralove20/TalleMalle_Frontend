@@ -19,8 +19,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 // 환경 변수 설정
-const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_MAP_KEY            // 카카오 SDK 키 (실제 키로 교체 필요)
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID      // 구글 CLIENT 키 (실제 키로 교체 필요)
+const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_MAP_KEY // 카카오 SDK 키 (실제 키로 교체 필요)
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID // 구글 CLIENT 키 (실제 키로 교체 필요)
 
 let googleTokenClient = null
 
@@ -31,14 +31,10 @@ let googleTokenClient = null
  */
 // 카카오 로그인 실행
 const loginWithKakao = () => {
-  if (window.Kakao && window.Kakao.isInitialized()) {
-    window.Kakao.Auth.authorize({
-      // 로컬 개발 환경용 리다이렉트 URI
-      redirectUri: 'http://localhost:5173/',
-    })
-  } else {
-    alert('카카오 SDK가 아직 로드되지 않았습니다.')
-  }
+  // 프론트엔드 SDK를 사용하는 대신, 백엔드의 OAuth2 입구로 브라우저를 이동시킵니다.
+  // 이 주소로 접속해야 Spring Security가 가로채서 카카오 로그인 페이지를 띄워줍니다.
+  const backendUrl = 'http://localhost:8080'
+  window.location.href = `${backendUrl}/oauth2/authorization/kakao`
 }
 
 // 구글 로그인 실행
@@ -59,7 +55,7 @@ const loginWithGoogle = () => {
 const fetchGoogleUserInfo = async (accessToken) => {
   try {
     const res = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${accessToken}` },
     })
     const user = res.data
 
@@ -68,12 +64,11 @@ const fetchGoogleUserInfo = async (accessToken) => {
       name: user.name,
       email: user.email,
       img: user.picture,
-      type: 'google'
+      type: 'google',
     })
 
     alert(`${user.name}님 환영합니다!`)
     router.push('/')
-
   } catch (error) {
     // console.error('구글 로그인 에러:', error)
     alert('구글 로그인 중 오류가 발생했습니다.')
@@ -105,7 +100,8 @@ onMounted(() => {
     if (window.google) {
       googleTokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+        scope:
+          'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         callback: async (response) => {
           if (response.access_token) {
             await fetchGoogleUserInfo(response.access_token)
@@ -130,17 +126,21 @@ onMounted(() => {
     </div>
 
     <div class="grid grid-cols-2 gap-3">
-      <button 
-        type="button" 
+      <button
+        type="button"
         @click="loginWithGoogle"
         class="flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all active:scale-95"
       >
-        <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" class="w-4 h-4" alt="Google" />
+        <img
+          src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
+          class="w-4 h-4"
+          alt="Google"
+        />
         <span class="text-sm font-semibold text-slate-600">Google</span>
       </button>
 
-      <button 
-        type="button" 
+      <button
+        type="button"
         @click="loginWithKakao"
         class="flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-xl hover:bg-[#FEE500] hover:border-[#FEE500] transition-all active:scale-95 group"
       >
