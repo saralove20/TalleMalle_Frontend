@@ -4,7 +4,9 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.js'
 import api from '@/api/notice/index.js'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import NoticeTabButton from '@/components/notice/NoticeTabButton.vue'
@@ -16,16 +18,34 @@ import FaqItem from '@/components/notice/FaqItem.vue'
  * 3. STATE & REFS (상태 관리)
  * ==============================================================================
  */
-const activeTab = ref('notice')  // 현재 선택된 탭 ('notice' | 'faq')
-const activeFaq = ref(null)      // 열려있는 FAQ 아이템의 인덱스
-const noticeList = ref([])       // 공지사항 목록 데이터
-const faqs = ref([])             // FAQ 목록 데이터
+const router = useRouter()
+const authStore = useAuthStore()
+
+const activeTab = ref('notice') // 현재 선택된 탭 ('notice' | 'faq')
+const activeFaq = ref(null) // 열려있는 FAQ 아이템의 인덱스
+const noticeList = ref([]) // 공지사항 목록 데이터
+const faqs = ref([]) // FAQ 목록 데이터
+
+/**
+ * 권한 체크: 글쓰기 버튼 노출 여부
+ * (현재는 테스트를 위해 무조건 true를 반환하도록 주석 처리)
+ */
+const canWriteNotice = computed(() => {
+  return authStore.user.role === 'ROLE_ADMIN'
+
+  // return true // 테스트용: 모든 유저에게 노출
+})
 
 /**
  * ==============================================================================
  * 4. METHODS - FUNCTIONAL (UI 핸들러)
  * ==============================================================================
  */
+
+const goToWrite = () => {
+  router.push({ name: 'noticeWrite' })
+}
+
 /**
  * FAQ 아코디언 토글 제어
  * @param {Number} index - 선택된 FAQ 아이템의 인덱스
@@ -47,7 +67,7 @@ const getNoticeList = async () => {
   try {
     const res = await api.noticeList()
     noticeList.value = res || []
-    console.log("공지사항 목록 조회 성공: ", res)
+    console.log('공지사항 목록 조회 성공: ', res)
   } catch (error) {
     console.error('공지사항을 불러오는 중 오류 발생:', error)
   }
@@ -59,7 +79,7 @@ const getNoticeList = async () => {
 const getFaqList = async () => {
   try {
     const res = await api.faqList()
-    faqs.value = res.data || res 
+    faqs.value = res.data || res
   } catch (error) {
     // console.error('FAQ를 불러오는 중 오류 발생:', error)
   }
@@ -91,19 +111,14 @@ onMounted(() => {
 
       <div class="flex-1 overflow-y-auto custom-scroll p-8">
         <div class="max-w-5xl mx-auto space-y-6">
-          <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
-            
+          <div
+            class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[600px]"
+          >
             <div class="flex border-b border-slate-50">
-              <NoticeTabButton 
-                :active="activeTab === 'notice'" 
-                @click="activeTab = 'notice'"
-              >
+              <NoticeTabButton :active="activeTab === 'notice'" @click="activeTab = 'notice'">
                 공지사항
               </NoticeTabButton>
-              <NoticeTabButton 
-                :active="activeTab === 'faq'" 
-                @click="activeTab = 'faq'"
-              >
+              <NoticeTabButton :active="activeTab === 'faq'" @click="activeTab = 'faq'">
                 자주 묻는 질문 (FAQ)
               </NoticeTabButton>
             </div>
@@ -131,6 +146,29 @@ onMounted(() => {
                 @toggle="toggleFaq(index)"
               />
             </div>
+          </div>
+          <div class="flex justify-end items-center px-4 mt-6 mb-2">
+            <button
+              v-if="canWriteNotice && activeTab === 'notice'"
+              @click="goToWrite"
+              class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-[1.25rem] text-sm font-bold transition-all shadow-md shadow-slate-200 active:scale-95"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              공지 작성
+            </button>
           </div>
         </div>
       </div>

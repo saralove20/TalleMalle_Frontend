@@ -86,7 +86,7 @@ const goBack = () => {
       />
 
       <div class="flex-1 overflow-y-auto custom-scroll p-8">
-        <div class="max-w-4xl mx-auto">
+        <div class="max-w-5xl mx-auto space-y-6">
           <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10 space-y-8">
             <div class="flex flex-wrap items-center gap-6">
               <div class="flex flex-col gap-2">
