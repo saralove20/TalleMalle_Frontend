@@ -45,4 +45,8 @@ export default {
     const response = await api.get('/chat/unread')
     return response.data
   },
+  getChatImagePresign: async (fileName, contentType) => {
+    const response = await api.post('/chat/image/presign', { fileName, contentType })
+    return response.data
+  },
 }

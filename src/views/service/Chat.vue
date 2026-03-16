@@ -230,29 +230,55 @@ const handleSendMessage = (textToSend) => {
 }
 
 // 이미지 전송 처리
-const handleSendImage = (imageData) => {
+const handleSendImage = async (file) => {
+  if (!file) return
   const now = new Date()
   const timeStr = formatTime(now)
 
-  // 1. 내 화면에 이미지 표시
-  messages.value.push({
-    id: Date.now(),
-    type: 'image',
-    isMe: true,
-    text: imageData,
-    time: timeStr,
-  })
+  try {
+    const presignRes = await api.getChatImagePresign(file.name, file.type)
+    const presignData = presignRes?.result ?? presignRes
+    const uploadUrl = presignData?.uploadUrl
+    const publicUrl = presignData?.publicUrl
 
-  // 2. 소켓 전송
-  if (stompClient && isConnected.value && roomId.value) {
-    const payload = {
-      type: 'image',
-      contents: imageData,
-      timestamp: now.toISOString(),
+    if (!uploadUrl || !publicUrl) {
+      throw new Error('업로드 URL을 가져오지 못했습니다.')
     }
-    stompClient.publish({
-      destination: `/app/chat/send/${roomId.value}`,
-      body: JSON.stringify(payload),
+
+    await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type,
+      },
+      body: file,
+    })
+
+    // 1. 내 화면에 이미지 표시
+    messages.value.push({
+      id: Date.now(),
+      type: 'image',
+      isMe: true,
+      text: publicUrl,
+      time: timeStr,
+    })
+
+    // 2. 소켓 전송 (이미지 URL 저장)
+    if (stompClient && isConnected.value && roomId.value) {
+      const payload = {
+        type: 'image',
+        contents: publicUrl,
+        timestamp: now.toISOString(),
+      }
+      stompClient.publish({
+        destination: `/app/chat/send/${roomId.value}`,
+        body: JSON.stringify(payload),
+      })
+    }
+  } catch (error) {
+    messages.value.push({
+      id: Date.now() + 1,
+      type: 'system',
+      text: '⚠️ 이미지 전송에 실패했습니다.',
     })
   }
 }

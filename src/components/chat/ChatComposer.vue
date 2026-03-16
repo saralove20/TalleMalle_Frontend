@@ -43,7 +43,7 @@ const handleTriggerFileUpload = () => {
   fileInput.value?.click()
 }
 
-// 파일 선택 및 압축 처리 핸들러
+// 파일 선택 핸들러
 const handleFileChange = (event) => {
   const file = event.target.files[0]
   if (!file) return
@@ -52,64 +52,7 @@ const handleFileChange = (event) => {
     alert('이미지 파일만 업로드 가능합니다.')
     return
   }
-
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const img = new window.Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-
-      let maxSize = 200
-      let width = img.width
-      let height = img.height
-
-      // 이미지 리사이징 로직
-      if (width > height) {
-        if (width > maxSize) {
-          height *= maxSize / width
-          width = maxSize
-        }
-      } else {
-        if (height > maxSize) {
-          width *= maxSize / height
-          height = maxSize
-        }
-      }
-
-      canvas.width = width
-      canvas.height = height
-      ctx.drawImage(img, 0, 0, width, height)
-
-      // 압축 로직
-      let quality = 0.7
-      let compressedBase64 = canvas.toDataURL('image/jpeg', quality)
-      const MAX_LENGTH = 18000
-
-      while (compressedBase64.length > MAX_LENGTH && (quality > 0.1 || maxSize > 100)) {
-        if (quality > 0.3) {
-          quality -= 0.2
-        } else {
-          maxSize *= 0.8
-          width *= 0.8
-          height *= 0.8
-          canvas.width = width
-          canvas.height = height
-          ctx.drawImage(img, 0, 0, width, height)
-        }
-        compressedBase64 = canvas.toDataURL('image/jpeg', quality)
-      }
-
-      if (compressedBase64.length > MAX_LENGTH * 1.5) {
-        alert('이미지 용량을 충분히 줄일 수 없어 전송에 실패했습니다.')
-        return
-      }
-
-      emit('send-image', compressedBase64)
-    }
-    img.src = e.target.result
-  }
-  reader.readAsDataURL(file)
+  emit('send-image', file)
   event.target.value = '' // 초기화 (같은 파일 다시 선택 가능하도록)
 }
 </script>
