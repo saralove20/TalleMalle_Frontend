@@ -29,7 +29,7 @@ const tagOptions = ['일반', '업데이트', '이벤트', '점검', '긴급']
 
 // 비활성 상태 스타일
 const tagStyles = {
-  일반: 'bg-yellow-50 text-yellow-600',
+  공지: 'bg-yellow-50 text-yellow-600',
   업데이트: 'bg-blue-50 text-blue-500',
   이벤트: 'bg-purple-50 text-purple-500',
   점검: 'bg-orange-50 text-orange-600',
@@ -38,7 +38,7 @@ const tagStyles = {
 
 // 활성 상태 스타일
 const activeTagStyles = {
-  일반: 'bg-yellow-400 text-white shadow-yellow-100',
+  공지: 'bg-yellow-400 text-white shadow-yellow-100',
   업데이트: 'bg-blue-600 text-white shadow-md',
   이벤트: 'bg-purple-600 text-white shadow-md',
   점검: 'bg-orange-500 text-white shadow-md',
@@ -86,7 +86,7 @@ const goBack = () => {
       />
 
       <div class="flex-1 overflow-y-auto custom-scroll p-8">
-        <div class="max-w-4xl mx-auto">
+        <div class="max-w-5xl mx-auto space-y-6">
           <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10 space-y-8">
             <div class="flex flex-wrap items-center gap-6">
               <div class="flex flex-col gap-2">
