@@ -12,6 +12,7 @@ import { useRoute } from 'vue-router'
 // Stores & API
 import { useAuthStore } from '@/stores/auth'
 import { useRecruitStore } from '@/stores/recruit'
+import { useChatStore } from '@/stores/chat'
 import api from '@/api/chat'
 
 // Components
@@ -26,6 +27,7 @@ import ProfileModal from '@/components/chat/ProfileModal.vue'
  */
 const authStore = useAuthStore()
 const recruitStore = useRecruitStore()
+const chatStore = useChatStore()
 const { user } = storeToRefs(authStore)
 const { recruitId } = storeToRefs(recruitStore)
 const route = useRoute()
@@ -463,6 +465,10 @@ const handleSocketMessage = (data) => {
     time: timeStr,
     user: displayUser,
   })
+
+  if (document.hidden) {
+    chatStore.markUnread(roomId.value)
+  }
 }
 
 // 퇴장 메시지 전송 (내부용)
@@ -476,6 +482,9 @@ onMounted(async () => {
   roomId.value = Number.isFinite(paramId) ? paramId : null
   if (roomId.value && recruitId.value !== roomId.value) {
     recruitId.value = roomId.value
+  }
+  if (roomId.value) {
+    chatStore.clearUnread(roomId.value)
   }
   // 1. 내 정보 설정
   if (user.value) {
@@ -503,6 +512,9 @@ watch(
     roomId.value = Number.isFinite(paramId) ? paramId : null
     if (roomId.value && recruitId.value !== roomId.value) {
       recruitId.value = roomId.value
+    }
+    if (roomId.value) {
+      chatStore.clearUnread(roomId.value)
     }
 
     if (stompClient) {

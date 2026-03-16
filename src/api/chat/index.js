@@ -41,4 +41,8 @@ export default {
     const response = await api.post('/push/subscribe', payload)
     return response.data
   },
+  getUnreadChatRooms: async () => {
+    const response = await api.get('/chat/unread')
+    return response.data
+  },
 }
