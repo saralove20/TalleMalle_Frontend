@@ -4,201 +4,488 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { User, Lock, UserPlus, AlertCircle } from 'lucide-vue-next'
-import api from '@/api/user'
 
-// Components
-import DriverAuthLayout from '@/components/driver/DriverAuthLayout.vue'
-import DriverAuthHeader from '@/components/driver/DriverAuthHeader.vue'
-import DriverAuthInput from '@/components/driver/DriverAuthInput.vue'
-import DriverAuthButton from '@/components/driver/DriverAuthButton.vue'
+import { ref, computed, onUnmounted, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  CarFront,
+  User,
+  ArrowRight,
+  Lock,
+  CheckCircle2,
+  Check,
+  Info,
+  Send,
+  AlertCircle,
+} from 'lucide-vue-next'
+import api from '@/api/driver'
 
 /**
  * ==============================================================================
- * 2. CONFIG & STORES
+ * 2. CONFIG & STORES (설정 및 스토어)
  * ==============================================================================
  */
 const router = useRouter()
 
 /**
  * ==============================================================================
- * 3. STATE & REFS
+ * 3. STATE & REFS (상태 변수 및 Computed)
  * ==============================================================================
  */
-const isLoading = ref(false)
-const errorMessage = ref('')
+// 현재 회원가입 진행 단계 (1: 본인인증 및 실명확인, 2: 계정 정보 설정)
+const step = ref(1)
 
-const signupForm = reactive({
+// 회원가입 폼 데이터
+const form = ref({
   name: '',
+  phoneNumber: '',
+  birth: '',
+  gender: '',
   email: '',
   password: '',
-  role: 'DRIVER',
+  passwordConfirm: '',
+  nickname: '',
+  termCheck: false,
+  isStudent: false,
 })
 
-const signupInputError = reactive({
-  name: { errorMessage: null, isValid: false },
-  email: { errorMessage: null, isValid: false },
-  password: { errorMessage: null, isValid: false },
+// 인증 관련 상태
+const verification = ref({
+  isPhoneVerified: false, // 휴대폰 인증 성공 여부
+
+  isEmailVerified: false, // 이메일 인증 성공 여부
+  phoneCode: '',
+  emailCode: '',
+  timer: 180,
+  timerInterval: null,
+  isTimerRunning: false,
+  currentType: '',
 })
+
+// 에러 메세지 관련
+const errors = ref({
+  phoneNumber: '',
+  email: '',
+  password: '',
+  passwordMatch: false,
+})
+
+const authCodeInput = ref('')
 
 /**
  * ==============================================================================
- * 4. METHODS - FUNCTIONAL (유효성 검사 및 UI 헬퍼)
+ * 4. METHODS - FUNCTIONAL (기능 및 UI 로직)
  * ==============================================================================
  */
-// 에러 표시 헬퍼
-const showError = (msg) => {
-  errorMessage.value = msg
+
+// 전화번호 자동 하이픈
+const autoHyphen = () => {
+  form.value.phoneNumber = form.value.phoneNumber
+    .replace(/[^0-9]/g, '')
+    .replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, '$1-$2-$3')
+    .replace(/(\-{1,2})$/g, '')
 }
 
-// 아이디(이름) 유효성 검사
-const nameRules = () => {
-  if (signupForm.name.length < 5) {
-    signupInputError.name.errorMessage = 'ID는 5글자 이상 입력해야합니다.'
-    signupInputError.name.isValid = false
-    return false
+// 생년월일 자동 마침표 (.) 포맷팅
+const handleBirthInput = (e) => {
+  let val = e.target.value.replace(/\D/g, '') // 숫자만 남김
+  let result = ''
+
+  if (val.length <= 4) {
+    result = val
+  } else if (val.length <= 6) {
+    result = val.slice(0, 4) + '-' + val.slice(4)
+  } else {
+    result = val.slice(0, 4) + '-' + val.slice(4, 6) + '-' + val.slice(6, 8)
   }
-  signupInputError.name.errorMessage = ''
-  signupInputError.name.isValid = true
+  form.value.birth = result
 }
 
-// 비밀번호 유효성 검사
-const passwordRules = () => {
-  if (signupForm.password.length < 8) {
-    signupInputError.password.errorMessage = '패스워드는 8글자 이상 입력해야합니다.'
-    signupInputError.password.isValid = false
-    return false
+// 인증번호 요청
+const requestAuth = (type) => {
+  verification.value.currentType = type
+
+  if (type === 'phoneNumber' && form.value.phoneNumber.length < 12) {
+    alert('휴대폰 번호를 올바르게 입력해주세요.')
+    return
+  }
+  if (type === 'email') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(form.value.email)) {
+      alert('올바른 이메일 형식이 아닙니다.')
+      return
+    }
   }
 
-  const hasUpperLetter = /[A-Z]/.test(signupForm.password)
-  const hasLowerLetter = /[a-zA-Z]/.test(signupForm.password)
-  const hasNumber = /[0-9]/.test(signupForm.password)
-  const hasSpecial = /[!@$]/.test(signupForm.password)
+  verification.value.isTimerRunning = true
+  verification.value.timer = 180
+  if (verification.value.timerInterval) clearInterval(verification.value.timerInterval)
 
-  if (!(hasUpperLetter && hasLowerLetter && hasNumber && hasSpecial)) {
-    signupInputError.password.errorMessage =
-      '패스워드는 영문, 숫자, 특수문자(!@$)를 모두 포함해야합니다.'
-    signupInputError.password.isValid = false
-    return false
+  verification.value.timerInterval = setInterval(() => {
+    verification.value.timer--
+    if (verification.value.timer <= 0) {
+      clearInterval(verification.value.timerInterval)
+      verification.value.isTimerRunning = false
+      alert('인증 시간이 만료되었습니다.')
+    }
+  }, 1000)
+}
+
+const formattedTimer = computed(() => {
+  const m = Math.floor(verification.value.timer / 60)
+    .toString()
+    .padStart(2, '0')
+  const s = (verification.value.timer % 60).toString().padStart(2, '0')
+  return `${m}:${s}`
+})
+
+const confirmAuth = (inputCode) => {
+  if (inputCode === '1234') {
+    clearInterval(verification.value.timerInterval)
+    verification.value.isTimerRunning = false
+
+    if (verification.value.currentType === 'phoneNumber') {
+      verification.value.isPhoneVerified = true
+    } else {
+      verification.value.isEmailVerified = true
+    }
+    alert('인증되었습니다.')
+    authCodeInput.value = ''
+  } else {
+    alert('인증번호가 일치하지 않습니다. (테스트: 1234)')
   }
+}
 
-  signupInputError.password.errorMessage = ''
-  signupInputError.password.isValid = true
+// 단계 이동 (유효성 검증 수정)
+const goToStep2 = () => {
+  if (!form.value.name || !form.value.phoneNumber || !form.value.birth || !form.value.gender) {
+    alert('모든 정보를 입력해주세요.')
+    return
+  }
+  if (form.value.birth.length < 10) {
+    alert('생년월일을 올바르게 입력해주세요.')
+    return
+  }
+  if (!verification.value.isPhoneVerified) {
+    alert('휴대폰 인증을 완료해주세요.')
+    return
+  }
+  step.value = 2
 }
 
 /**
  * ==============================================================================
- * 5. METHODS - API & NETWORK (회원가입 처리)
+ * 5. METHODS - API & NETWORK (서버 연동)
  * ==============================================================================
  */
-const signup = async () => {
-  // 1. 에러 메시지 초기화
-  errorMessage.value = ''
-
-  // 2. 유효성 검사 실행
-  nameRules()
-  passwordRules()
-
-  if (!signupInputError.name.isValid) {
-    showError('아이디 입력 규칙을 확인해주세요.')
-    return false
+// --- 회원가입 처리 ---
+const handleSignup = async () => {
+  if (!verification.value.isEmailVerified) {
+    alert('이메일 인증을 완료해주세요.')
+    return
   }
-
-  if (!signupForm.email) {
-    showError('이메일을 입력해주세요.')
-    return false
+  if (form.value.password.length < 8) {
+    errors.value.password = '비밀번호는 8자 이상이어야 합니다.'
+    return
   }
-
-  if (!signupInputError.password.isValid) {
-    showError('비밀번호 입력 규칙을 확인해주세요.')
-    return false
+  if (form.value.password !== form.value.passwordConfirm) {
+    errors.value.passwordMatch = true
+    return
   }
-
-  if (!signupForm.name || !signupForm.email || !signupForm.password) {
-    showError('모든 정보를 입력해주세요.')
+  if (!form.value.termCheck) {
+    alert('약관에 동의해주세요.')
     return
   }
 
-  isLoading.value = true
-
   try {
-    const res = await api.signup(signupForm)
-    // console.log('Signup success:', res)
+    const res = await api.signup(form.value)
 
-    // 성공 시 로그인 페이지로 이동
+    // 성공 시 처리 (HTTP 200, 201 등 2xx 응답)
+    // console.log('Signup Response:', res)
+    alert('회원가입이 완료되었습니다. 로그인해주세요.')
     router.push('/driverlogin')
 
+    console.log('가입 데이터:', res.data)
   } catch (error) {
-    // console.error('회원가입 에러:', error)
-
-    if (!error.response) {
-      showError('서버와 연결할 수 없습니다. 인터넷 상태를 확인해주세요.')
-    } else {
-      const status = error.response.status
-      const data = error.response.data
-
-      // 400번대: 이미 존재하는 아이디/이메일 등
-      if (status >= 400 && status < 500) {
-        showError(data?.message || '입력하신 정보를 다시 확인해주세요. (중복된 ID 등)')
-      }
-      // 500번대: 서버 오류
-      else if (status >= 500) {
-        showError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
-      }
-      else {
-        showError('회원가입에 실패했습니다.')
-      }
-    }
-  } finally {
-    isLoading.value = false
+    // API 서버에서 오는 400, 500번대 에러는 모두 이쪽으로 들어옵니다.
+    console.error('회원가입 실패:', error)
+    const message = error.response?.data?.message || '회원가입에 실패했습니다. 다시 시도해주세요.'
+    alert(message)
   }
+
+  // alert('회원가입이 완료되었습니다!')
+  // router.push('/login')
 }
 
-/**
- * ==============================================================================
- * 6. LIFECYCLE
- * ==============================================================================
- */
-// (사용된 라이프사이클 훅 없음)
+onUnmounted(() => {
+  if (verification.value.timerInterval) clearInterval(verification.value.timerInterval)
+})
 </script>
 
 <template>
-  <DriverAuthLayout theme="emerald">
-    <DriverAuthHeader title="파트너 지원하기" subtitle="탈래말래의 기사님이 되어주세요 🤝" :icon="UserPlus" theme="emerald" />
-
-    <form @submit.prevent="signup" class="space-y-5">
-      <DriverAuthInput label="User Name" v-model="signupForm.name" @blur="nameRules" placeholder="사용하실 이름을 입력하세요"
-        :error-message="signupInputError.name?.errorMessage" :icon="User" />
-
-      <DriverAuthInput label="Email" v-model="signupForm.email" placeholder="사용하실 이메일을 입력하세요"
-        :error-message="signupInputError.email?.errorMessage" :icon="User" />
-
-      <DriverAuthInput label="Password" type="password" v-model="signupForm.password" @blur="passwordRules"
-        placeholder="비밀번호를 설정하세요" :error-message="signupInputError.password?.errorMessage" :icon="Lock" />
-
-      <Transition enter-active-class="transition duration-200 ease-out"
-        enter-from-class="transform -translate-y-2 opacity-0" enter-to-class="transform translate-y-0 opacity-100"
-        leave-active-class="transition duration-150 ease-in" leave-from-class="transform translate-y-0 opacity-100"
-        leave-to-class="transform -translate-y-2 opacity-0">
-        <div v-if="errorMessage"
-          class="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-sm font-bold shadow-sm">
-          <AlertCircle class="w-5 h-5 shrink-0" />
-          <span>{{ errorMessage }}</span>
+  <div
+    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 font-sans"
+  >
+    <div
+      class="signup-card bg-white w-full max-w-lg rounded-3xl shadow-xl overflow-hidden relative border border-white/50"
+    >
+      <div class="p-8 pb-0 flex flex-col items-center text-center">
+        <div class="flex items-center gap-2 mb-6 cursor-default">
+          <div class="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-100">
+            <CarFront class="text-white w-7 h-7" />
+          </div>
+          <h1 class="text-2xl font-bold tracking-tight text-indigo-900">탈래말래</h1>
         </div>
-      </Transition>
+        <h2 class="text-xl font-bold text-slate-800">
+          {{ step === 1 ? '본인 확인' : '계정 정보 설정' }}
+        </h2>
+        <p class="text-slate-500 mt-2 text-sm">
+          {{
+            step === 1
+              ? '안전한 서비스 이용을 위해 실명을 인증해주세요.'
+              : '로그인에 사용할 정보를 입력해주세요.'
+          }}
+        </p>
+      </div>
 
-      <DriverAuthButton text="가입 신청하기" :is-loading="isLoading" theme-color="emerald" />
-    </form>
+      <div class="p-8 space-y-5">
+        <div v-if="step === 1" class="space-y-5">
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-400 uppercase ml-1">이름</label>
+            <div class="relative">
+              <input
+                v-model="form.name"
+                type="text"
+                placeholder="실명을 입력해주세요"
+                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+              <User class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
+            </div>
+          </div>
 
-    <div class="text-center mt-8">
-      <p class="text-slate-400 text-sm">
-        이미 계정이 있으신가요?
-        <RouterLink to="/driverlogin" class="text-white font-bold underline decoration-emerald-500 ml-1">
-          로그인하기
-        </RouterLink>
-      </p>
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-400 uppercase ml-1">휴대폰 번호</label>
+            <div class="flex gap-2">
+              <input
+                v-model="form.phoneNumber"
+                @input="autoHyphen"
+                type="tel"
+                placeholder="010-0000-0000"
+                maxlength="13"
+                :disabled="verification.isPhoneVerified"
+                class="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-slate-100"
+              />
+              <button
+                type="button"
+                @click="requestAuth('phoneNumber')"
+                :disabled="verification.isPhoneVerified"
+                class="px-4 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition-colors whitespace-nowrap min-w-[80px] disabled:bg-emerald-500 disabled:cursor-default"
+              >
+                {{ verification.isPhoneVerified ? '인증 완료' : '인증번호' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-slate-400 uppercase ml-1">생년월일</label>
+              <input
+                v-model="form.birth"
+                @input="handleBirthInput"
+                type="text"
+                placeholder="YYYY-MM-DD"
+                maxlength="10"
+                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+            </div>
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-slate-400 uppercase ml-1">성별</label>
+              <div class="flex gap-1 h-[54px]">
+                <button
+                  type="button"
+                  @click="form.gender = 'male'"
+                  :class="
+                    form.gender === 'male'
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-slate-50 text-slate-400 border-slate-200'
+                  "
+                  class="flex-1 border rounded-xl font-bold transition-all text-sm"
+                >
+                  남
+                </button>
+                <button
+                  type="button"
+                  @click="form.gender = 'female'"
+                  :class="
+                    form.gender === 'female'
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-slate-50 text-slate-400 border-slate-200'
+                  "
+                  class="flex-1 border rounded-xl font-bold transition-all text-sm"
+                >
+                  여
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            @click="goToStep2"
+            class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg shadow-slate-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4"
+          >
+            <span>다음 단계로</span>
+            <ArrowRight class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div v-if="step === 2" class="space-y-5">
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-400 uppercase ml-1">이메일 계정</label>
+            <div class="flex gap-2">
+              <input
+                v-model="form.email"
+                type="email"
+                placeholder="example@tallemalle.com"
+                :disabled="verification.isEmailVerified"
+                class="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-slate-100"
+              />
+              <button
+                type="button"
+                @click="requestAuth('email')"
+                :disabled="verification.isEmailVerified"
+                class="px-4 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition-colors whitespace-nowrap min-w-[80px] disabled:bg-emerald-500 disabled:cursor-default"
+              >
+                {{ verification.isEmailVerified ? '인증 완료' : '인증번호' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-400 uppercase ml-1">비밀번호</label>
+            <div class="relative">
+              <input
+                v-model="form.password"
+                type="password"
+                placeholder="영문, 숫자, 특수문자 포함 8자 이상"
+                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                :class="{ 'border-rose-500 bg-rose-50': errors.password }"
+              />
+              <Lock class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
+            </div>
+            <p v-if="errors.password" class="text-xs text-rose-500 ml-1">{{ errors.password }}</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-400 uppercase ml-1"
+              >비밀번호 확인</label
+            >
+            <div class="relative">
+              <input
+                v-model="form.passwordConfirm"
+                type="password"
+                placeholder="비밀번호를 한 번 더 입력해주세요"
+                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                :class="{ 'border-rose-500 bg-rose-50': errors.passwordMatch }"
+              />
+              <CheckCircle2 class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
+            </div>
+            <p v-if="errors.passwordMatch" class="text-xs text-rose-500 ml-1">
+              비밀번호가 일치하지 않습니다.
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-400 uppercase ml-1">닉네임</label>
+            <div class="relative">
+              <input
+                v-model="form.nickname"
+                type=""
+                placeholder="사용할 닉네임을 입력해주세요"
+                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                :class="{ 'border-rose-500 bg-rose-50': errors.passwordMatch }"
+              />
+              <CheckCircle2 class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
+            </div>
+          </div>
+
+          <div class="pt-2 space-y-3 border-t border-slate-50 mt-2 mb-6">
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input
+                v-model="form.termCheck"
+                type="checkbox"
+                class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <span class="text-sm text-slate-600 group-hover:text-slate-900 transition-colors"
+                >이용약관 및 개인정보 처리방침 동의 (필수)</span
+              >
+            </label>
+          </div>
+
+          <div class="flex gap-3">
+            <button
+              @click="step = 1"
+              class="px-5 py-4 rounded-xl border border-slate-200 text-slate-500 font-bold hover:bg-slate-50"
+            >
+              이전
+            </button>
+            <button
+              @click="handleSignup"
+              class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <span>가입 완료</span>
+              <Check class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 bg-slate-50 text-center border-t border-slate-100">
+        <p class="text-sm text-slate-500">
+          이미 계정이 있으신가요?
+          <router-link to="/login" class="text-indigo-600 font-bold hover:underline"
+            >로그인</router-link
+          >
+        </p>
+      </div>
     </div>
-  </DriverAuthLayout>
+
+    <div
+      v-if="verification.isTimerRunning"
+      class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+    >
+      <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 text-center">
+        <div
+          class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <Send class="w-6 h-6 text-indigo-600" />
+        </div>
+        <h3 class="text-lg font-bold text-slate-900">인증번호 발송 완료</h3>
+        <p class="text-sm text-slate-500 mt-1">입력하신 정보로 인증번호가 전송되었습니다.</p>
+        <div class="mt-6 mb-2">
+          <input
+            v-model="authCodeInput"
+            type="text"
+            placeholder="인증번호 6자리를 입력해주세요"
+            maxlength="4"
+            class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div class="text-sm font-bold text-rose-500 mb-6">{{ formattedTimer }}</div>
+        <div class="flex gap-3">
+          <button
+            @click="verification.isTimerRunning = false"
+            class="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-500 font-bold hover:bg-slate-50"
+          >
+            취소
+          </button>
+          <button
+            @click="confirmAuth(authCodeInput)"
+            class="flex-1 py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-lg"
+          >
+            인증하기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>

@@ -1,192 +1,229 @@
 <script setup>
 /**
- * ==============================================================================
- * 1. IMPORTS
- * ==============================================================================
- */
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { CarFront, User, Lock, Mail, AlertCircle } from 'lucide-vue-next'
-import api from '@/api/user'
 
-// Components
-import DriverAuthLayout from '@/components/driver/DriverAuthLayout.vue'
-import DriverAuthHeader from '@/components/driver/DriverAuthHeader.vue'
-import DriverAuthInput from '@/components/driver/DriverAuthInput.vue'
-import DriverAuthButton from '@/components/driver/DriverAuthButton.vue'
+ * ==============================================================================
+
+ * 1. IMPORTS
+
+ * ==============================================================================
+
+ */
+
+import { reactive } from 'vue'
+
+import { useRouter } from 'vue-router'
+
+import { useAuthStore } from '@/stores/driver'
+
+import { Mail, Lock } from 'lucide-vue-next'
+
+import AuthBaseInput from '../../components/auth/AuthBaseInput.vue'
+
+import AuthLayout from '@/components/auth/AuthLayout.vue'
+
+import SocialLogin from '@/components/login/SocialLogin.vue'
+
+import api from '@/api/driver'
 
 /**
+
  * ==============================================================================
+
  * 2. CONFIG & STORES
+
  * ==============================================================================
+
  */
+
 const router = useRouter()
 
+const authStore = useAuthStore()
+
 /**
+
  * ==============================================================================
- * 3. STATE & REFS
+
+ * 3. STATE & REFS (상태 변수 및 Computed)
+
  * ==============================================================================
+
  */
-const autoLogin = ref(false)
-const isLoading = ref(false)
-const errorMessage = ref('')
 
 const loginForm = reactive({
   email: '',
+
   password: '',
 })
 
+// 입력 값 검증을 위한 변수 저장
+
 const loginInputError = reactive({
   email: { errorMessage: null, isValid: false },
+
   password: { errorMessage: null, isValid: false },
 })
 
 /**
+
  * ==============================================================================
- * 4. METHODS - FUNCTIONAL (유효성 검사)
+
+ * 4. METHODS - FUNCTIONAL (UI 및 검증 로직)
+
  * ==============================================================================
+
  */
+
 const emailRules = () => {
-  if (!loginForm.email.includes('@')) {
-    loginInputError.email.errorMessage = '이메일 형식으로 입력해야합니다.'
+  if (loginForm.email.length === 0) {
+    loginInputError.email.errorMessage = '이메일을 입력해주세요.'
+
     loginInputError.email.isValid = false
-    return false
+
+    return
   }
+
   loginInputError.email.errorMessage = ''
+
   loginInputError.email.isValid = true
 }
 
 const passwordRules = () => {
-  if (loginForm.password.length < 8) {
-    loginInputError.password.errorMessage = '패스워드는 8글자 이상 입력해야합니다.'
-    loginInputError.password.isValid = false
-    return false
-  }
+  const hasLowerLetter = /[a-z]/.test(loginForm.password)
 
-  const hasUpperLetter = /[A-Z]/.test(loginForm.password)
-  const hasLowerLetter = /[a-zA-Z]/.test(loginForm.password)
   const hasNumber = /[0-9]/.test(loginForm.password)
+
   const hasSpecial = /[!@$]/.test(loginForm.password)
 
-  if (!(hasUpperLetter && hasLowerLetter && hasNumber && hasSpecial)) {
-    loginInputError.password.errorMessage =
-      '패스워드는 영문, 숫자, 특수문자(!@$)를 모두 포함해야합니다.'
+  if (loginForm.password.length < 8) {
+    loginInputError.password.errorMessage = '비밀번호는 8글자 이상 입력해야합니다.'
+
     loginInputError.password.isValid = false
-    return false
+
+    return
   }
+
+  if (!(hasLowerLetter && hasNumber && hasSpecial)) {
+    loginInputError.password.errorMessage =
+      '비밀번호는 영문 소문자, 숫자, 특수문자를 모두 포함해야합니다.'
+
+    loginInputError.password.isValid = false
+
+    return
+  }
+
   loginInputError.password.errorMessage = ''
+
   loginInputError.password.isValid = true
 }
 
 /**
- * ==============================================================================
- * 5. METHODS - API & NETWORK (로그인 처리)
- * ==============================================================================
- */
-const handleLogin = async () => {
-  // console.log('🚀 로그인 시도!')
 
-  // 1. 에러 메시지 초기화
-  errorMessage.value = ''
+ * ==============================================================================
+
+ * 5. METHODS - API SERVICE METHODS (인증 API 서비스)
+
+ * ==============================================================================
+
+ */
+
+// 로그인 처리
+
+const handleLogin = async () => {
+  // 1. 사전 유효성 검사 실행
 
   emailRules()
+
   passwordRules()
 
   if (!loginInputError.email.isValid || !loginInputError.password.isValid) {
     return
   }
 
-  if (!loginForm.password || !loginForm.email) {
-    errorMessage.value = '모든 정보를 입력해주세요.'
-    return
-  }
-
-  isLoading.value = true
+  // 2. 로그인 시도
 
   try {
     const res = await api.login(loginForm)
 
-    // 성공 시
-    if (res && res.status == 200) {
-      localStorage.setItem('USERINFO', JSON.stringify(res.data));
-      router.push({ name: 'driverpage' });
-    }
+    // 성공 시 처리 (200 OK)
+
+    authStore.login(res.data)
+
+    alert('로그인되었습니다.')
+
+    router.push('/driverpage')
   } catch (error) {
-    // console.error('로그인 에러:', error)
+    // 실패 시 처리 (401 등 모든 에러)
 
-    if (!error.response) {
-      // 1. 인터넷 끊김 등 네트워크 에러
-      errorMessage.value = '서버와 연결할 수 없습니다. 인터넷 상태를 확인해주세요.'
-    } else {
-      const { status, data } = error.response
+    // console.error('로그인 실패:', error)
 
-      // 2. 400번대 에러 (사용자 실수)
-      if (status >= 400 && status < 500) {
-        errorMessage.value = data?.message || '입력하신 정보를 다시 확인해주세요.'
-      }
-      // 3. 500번대 에러 (서버 문제)
-      else if (status >= 500 && status < 600) {
-        errorMessage.value = '서버에 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
-      }
-      // 4. 그 외
-      else {
-        errorMessage.value = '알 수 없는 오류가 발생했습니다.'
-      }
-    }
+    // 아이디/비번 불일치 또는 서버 에러 처리
 
-  } finally {
-    isLoading.value = false
+    const message =
+      error.response?.status === 401
+        ? '아이디와 비밀번호를 확인해보세요.'
+        : '로그인 중 오류가 발생했습니다.'
+
+    alert(message)
   }
 }
-
-/**
- * ==============================================================================
- * 6. LIFECYCLE
- * ==============================================================================
- */
-// (사용된 라이프사이클 훅 없음)
 </script>
 
 <template>
-  <DriverAuthLayout theme="indigo">
-    <DriverAuthHeader title="기사님 로그인" subtitle="오늘도 안전운행 하세요! 🚕" :icon="CarFront" theme="indigo" />
+  <AuthLayout no-footer-background>
+    <template #header>
+      <h2 class="text-2xl font-bold text-slate-900">파트너님! 환영합니다</h2>
 
-    <form @submit.prevent="handleLogin" class="space-y-5">
-      <DriverAuthInput label="Email" v-model="loginForm.email" @blur="emailRules" placeholder="이메일을 입력하세요"
-        :error-message="loginInputError.email.errorMessage" :icon="Mail" />
+      <p class="text-slate-500 mt-2 text-sm">함께 탈 승객들이 기다리고 있어요.</p>
+    </template>
 
-      <DriverAuthInput label="Password" type="password" v-model="loginForm.password" @blur="passwordRules"
-        placeholder="비밀번호를 입력하세요" :error-message="loginInputError.password.errorMessage" :icon="Lock" />
+    <form @submit.prevent="handleLogin" class="px-8 py-4 space-y-4">
+      <AuthBaseInput
+        v-model="loginForm.email"
+        type="email"
+        placeholder="이메일 주소"
+        :icon="Mail"
+        :error="loginInputError.email.errorMessage"
+        @blur="emailRules"
+      />
 
-      <div class="flex items-center justify-between px-1 pt-2">
-        <label class="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" v-model="autoLogin"
-            class="appearance-none w-5 h-5 rounded border border-slate-600 bg-slate-800 checked:bg-indigo-500 checked:border-indigo-500 transition-all" />
-          <span class="text-sm text-slate-400 group-hover:text-slate-300">자동 로그인</span>
-        </label>
+      <div>
+        <AuthBaseInput
+          v-model="loginForm.password"
+          type="password"
+          placeholder="비밀번호"
+          :icon="Lock"
+          :error="loginInputError.password.errorMessage"
+          @blur="passwordRules"
+        />
+
+        <div class="flex justify-end mt-1">
+          <router-link
+            to="/findpassword"
+            class="text-xs text-slate-400 hover:text-indigo-600 font-medium py-1"
+          >
+            비밀번호를 잊으셨나요?
+          </router-link>
+        </div>
       </div>
 
-      <Transition enter-active-class="transition duration-200 ease-out"
-        enter-from-class="transform -translate-y-2 opacity-0" enter-to-class="transform translate-y-0 opacity-100"
-        leave-active-class="transition duration-150 ease-in" leave-from-class="transform translate-y-0 opacity-100"
-        leave-to-class="transform -translate-y-2 opacity-0">
-        <div v-if="errorMessage"
-          class="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-sm font-bold shadow-sm">
-          <AlertCircle class="w-5 h-5 shrink-0" />
-          <span>{{ errorMessage }}</span>
-        </div>
-      </Transition>
+      <button
+        type="submit"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-100 transition-all mt-2 active:scale-[0.98]"
+      >
+        로그인하기
+      </button>
 
-      <DriverAuthButton text="운행 시작하기" :is-loading="isLoading" theme-color="indigo" />
+      <SocialLogin />
     </form>
 
-    <div class="text-center mt-8">
-      <p class="text-slate-400 text-sm">
-        계정이 없으신가요?
-        <RouterLink to="/driversignup" class="text-white font-bold underline decoration-indigo-500 ml-1">
-          기사님 지원하기
-        </RouterLink>
+    <template #footer>
+      <p class="text-sm text-slate-500">
+        아직 회원이 아니신가요?
+
+        <router-link to="/signup" class="text-indigo-600 font-bold hover:underline ml-1">
+          회원가입
+        </router-link>
       </p>
-    </div>
-  </DriverAuthLayout>
+    </template>
+  </AuthLayout>
 </template>
