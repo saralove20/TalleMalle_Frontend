@@ -95,6 +95,19 @@ const normalizeHistoryMessage = (item) => {
 
   const isMe = String(senderId) === String(myUserId.value)
   const timeSource = item.timestamp || item.createdAt || new Date()
+  const messageType = item.type || 'message'
+
+  if (messageType === 'image') {
+    return {
+      id: item.idx || item.id || Date.now() + Math.random(),
+      type: 'image',
+      isMe,
+      userId: senderId || 'Unknown',
+      text: contents,
+      time: formatTime(timeSource),
+      user: senderName ? { name: senderName } : undefined,
+    }
+  }
 
   return {
     id: item.idx || item.id || Date.now() + Math.random(),
