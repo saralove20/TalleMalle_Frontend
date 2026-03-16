@@ -35,14 +35,6 @@ const handleClick = () => {
                 {{ item.cur }}/{{ item.max }}명
             </span>
         </div>
-
         <p class="font-bold text-slate-800">{{ item.start }} → {{ item.dest }}</p>
-
-        <div class="flex flex-wrap gap-2">
-            <span v-for="tag in (item.tags || [])" :key="tag"
-                class="text-[11px] font-bold border border-slate-100 px-4 py-2 rounded-xl bg-white shadow-sm">
-                {{ tag }}
-            </span>
-        </div>
     </div>
 </template>

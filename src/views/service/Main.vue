@@ -56,7 +56,6 @@ const displayRoute = ref('경로 미지정')
 
 // UI 상태 (모달, 패널 등)
 const isListPanelOpen = ref(true)
-const isPanelOpen = ref(false)
 const isDetailOpen = ref(false)
 const isCreateModalOpen = ref(false)
 const isLoading = ref(false)
@@ -210,6 +209,12 @@ const handleCreateSubmit = async (formData) => {
     targetDate.setHours(Number(hours), Number(minutes), 0, 0)
   }
 
+  // 세팅한 시간이 지금 시간보다 괴거면 반환 처리
+  if (targetDate.getTime() < Date.now()) {
+    alert('출발 시간은 현재 시간 이후로 설정해주세요.')
+    return
+  }
+
   // formData를 백엔드 Dto에 맞게 변환
   const reqData = {
     startPointName: formData.startPoint || formData.start,
@@ -248,15 +253,21 @@ const handleCreateSubmit = async (formData) => {
 
 // 모집글 나가기 함수
 const handleLeaveRecruit = async () => {
-  if (!confirm("정말 이 모집에서 나가시겠습니까?")) return;
+  if (!confirm("정말 이 모집에서 나가시겠습니까?")) {
+    return
+  }
 
   try {
     const res = await api.leaveRecruit(selectedRecruit.value.id);
     if (res.data.result) {
       alert("성공적으로 방에서 나왔습니다.");
-      // ⭐️ API 성공 시 스토어 수동 초기화 보장
+
       recruitStore.clear();
-      if (authStore.user) authStore.user.status = 'IDLE';
+      if (authStore.user) {
+        authStore.user.status = "IDLE"
+      }
+
+      displayRoute.value = '경로 미지정';
     }
   } catch (e) {
     alert("오류가 발생했습니다.");
@@ -476,11 +487,11 @@ const handleSocketMessage = (event) => {
       const deletedId = Number(realPayload)
 
       if (myRecruitId.value === deletedId) {
-        alert("방장에 의해 모집이 취소되어 대기 상태로 전환합니다.")
         recruitStore.clear()
         if (authStore.user) {
           authStore.user.status = "IDLE"
         }
+        displayRoute.value = "경로 미지정"
       }
 
       // 리스트에서 해당 방 제거
@@ -533,10 +544,27 @@ onMounted(async () => {
   connect(wsUrl, handleSocketMessage)
 
   // 초기 데이터 로드
-  // await fetchRecruits()
+  await fetchRecruits()
 
   // 유저의 Status 확인
   syncRecruitStatus()
+
+  console.log("내 모집글 정보 : " + myRecruitId.value)
+
+  // 내가 참여/모집 중인 방이 있다면 그곳으로 화면 이동
+  if (myRecruitId.value) {
+    const myRoom = recruitList.value.find(r => r.id === myRecruitId.value)
+    if (myRoom) {
+      setTimeout(() => {
+        if (mapComponent.value && myRoom.startLat) {
+          mapComponent.value.moveToLocation(myRoom.startLat, myRoom.startLng)
+
+          // selectedRecruit.value = myRoom
+          // isDetailOpen.value = true
+        }
+      }, 500)
+    }
+  }
 
   console.log(`현재 상태: ${myStatus.value}, 방 ID: ${myRecruitId.value}`)
 })
