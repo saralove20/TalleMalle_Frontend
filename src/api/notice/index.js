@@ -12,6 +12,16 @@ import api from '@/plugins/axiosinterceptor'
  */
 
 /**
+ * 공지사항 작성
+ * @param {Object} noticeData - 등록할 공지사항 데이터 (title, contents, tag, is_pinned 등)
+ * @returns {Promise<Object>} 서버 처리 결과 및 생성된 게시글 정보
+ */
+const createNotice = async (req) => {
+  const res = await api.post('/notices', req)
+  return res.data
+}
+
+/**
  * 공지사항 전체 목록 조회
  * @param {Object} req - 필터링이나 페이지네이션 관련 파라미터
  * @returns {Promise<Array>} 공지사항 리스트 데이터
@@ -46,4 +56,4 @@ const faqList = async (req) => {
   return res.data
 }
 
-export default { noticeList, getNoticeDetail, faqList }
+export default { createNotice, noticeList, getNoticeDetail, faqList }

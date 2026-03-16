@@ -123,9 +123,9 @@ const recentNotifications = computed(() => {
 })
 
 // [Computed] 읽지 않은 알림 개수
-const unreadCount = computed(() => {
-  return notifications.value.filter((n) => !n.isRead).length
-})
+// const unreadCount = computed(() => {
+//   return notifications.value.filter((n) => !n.isRead).length
+// })
 
 /**
  * ==============================================================================
