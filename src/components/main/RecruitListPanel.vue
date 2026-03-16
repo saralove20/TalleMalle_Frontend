@@ -39,6 +39,8 @@ const destSearchResults = ref([]) // 목적지 검색 결과 목록
 const showDestDropdown = ref(false) // 목적지 드롭다운 표시 여부
 let destSearchTimeout = null // 목적지용 디바운싱 타이머
 
+let isSelecting = false
+
 /**
  * ==============================================================================
  * 4. COMPUTED
@@ -69,6 +71,10 @@ const handleSelectItem = (item) => {
 
 // 출발지 카카오 장소 검색 API 호출 (글자를 입력할 때마다 실행)
 const handleInputSearch = (e) => {
+    if (isSelecting) {
+        return
+    }
+
     const keyword = e.target.value.trim()
 
     if (!keyword) {
@@ -77,14 +83,23 @@ const handleInputSearch = (e) => {
         return
     }
 
-    if (searchTimeout) clearTimeout(searchTimeout)
+    if (searchTimeout) {
+        clearTimeout(searchTimeout)
+    }
 
     // 타이핑할 때마다 API 호출하는 걸 방지하기 위해 0.3초 대기 (디바운싱)
     searchTimeout = setTimeout(() => {
-        if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) return
+        if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
+            return
+        }
 
         const ps = new window.kakao.maps.services.Places()
+
         ps.keywordSearch(keyword, (data, status) => {
+            if (isSelecting) {
+                return
+            }
+
             if (status === window.kakao.maps.services.Status.OK) {
                 startSearchResults.value = data
                 showDropdown.value = true
@@ -98,15 +113,29 @@ const handleInputSearch = (e) => {
 
 // 드롭다운에서 장소를 클릭했을 때 실행
 const handleSelectPlace = (place) => {
+    isSelecting = true
+
+    if (searchTimeout) {
+        clearTimeout(searchTimeout)
+    }
+
     startInput.value = place.place_name
     showDropdown.value = false
 
     // 선택 즉시 지도 이동
     emit('search', place.place_name)
+
+    setTimeout(() => {
+        isSelecting = false
+    }, 300)
 }
 
 // 목적지 카카오 장소 검색 API 호출
 const handleDestInputSearch = (e) => {
+    if (isSelecting) {
+        return
+    }
+
     const keyword = e.target.value.trim()
 
     if (!keyword) {
@@ -115,13 +144,22 @@ const handleDestInputSearch = (e) => {
         return
     }
 
-    if (destSearchTimeout) clearTimeout(destSearchTimeout)
+    if (destSearchTimeout) {
+        clearTimeout(destSearchTimeout)
+    }
 
     destSearchTimeout = setTimeout(() => {
-        if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) return
+        if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
+            return
+        }
 
         const ps = new window.kakao.maps.services.Places()
+
         ps.keywordSearch(keyword, (data, status) => {
+            if (isSelecting) {
+                return
+            }
+
             if (status === window.kakao.maps.services.Status.OK) {
                 destSearchResults.value = data // 자르지 않고 전체 데이터 저장
                 showDestDropdown.value = true
@@ -135,10 +173,20 @@ const handleDestInputSearch = (e) => {
 
 // 목적지 드롭다운에서 장소를 클릭했을 때 실행
 const handleSelectDestPlace = (place) => {
+    isSelecting = true
+
+    if (destSearchTimeout) {
+        clearTimeout(destSearchTimeout)
+    }
+
     destInput.value = place.place_name
     showDestDropdown.value = false
     // 목적지는 지도 이동(emit) 없이, destInput 값만 바뀌면
-    // computed(filteredList)가 알아서 리스트를 필터링해 줍니다!
+    // computed(filteredList)가 알아서 리스트를 필터링
+
+    setTimeout(() => {
+        isSelecting = false
+    }, 300)
 }
 
 // 검색 버튼용 함수

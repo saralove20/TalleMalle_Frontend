@@ -60,14 +60,13 @@ const searchPlace = (keyword) => {
             const targetLat = data[0].y
             const targetLng = data[0].x
 
-            // 1. 지도 중심을 부드럽게 이동 (오프셋 적용)
-            handleMoveWithOffset(targetLat, targetLng)
-
-            // 2. 동네가 잘 보이도록 줌 레벨 살짝 당겨주기 (선택 사항)
+            // 동네가 잘 보이도록 줌 레벨 살짝 당겨주기 (선택 사항)
             if (mapInstance.value) {
                 mapInstance.value.setLevel(4)
             }
 
+            // 지도 중심을 부드럽게 이동 (오프셋 적용)
+            handleMoveWithOffset(targetLat, targetLng)
         } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
             alert('검색 결과가 존재하지 않습니다.')
         } else if (status === window.kakao.maps.services.Status.ERROR) {
@@ -91,21 +90,21 @@ const handleMoveWithOffset = (targetLat, targetLng) => {
     }
 
     // [카카오 지도 Projection 사용]
-    // 1. 위도/경도를 화면상의 픽셀 좌표(Point)로 변환
+    // 위도/경도를 화면상의 픽셀 좌표(Point)로 변환
     const projection = map.getProjection()
     const targetPoint = projection.pointFromCoords(targetPosition)
 
-    // 2. 오프셋만큼 중심점을 왼쪽(-)으로 이동
+    // 오프셋만큼 중심점을 왼쪽(-)으로 이동
     // (지도의 중심을 왼쪽으로 옮겨야, 우리가 원하는 타겟 마커가 화면 오른쪽에 옴)
     const newCenterPoint = new window.kakao.maps.Point(
         targetPoint.x - props.centerOffset,
         targetPoint.y
     )
 
-    // 3. 다시 픽셀 좌표를 위도/경도로 변환
+    // 다시 픽셀 좌표를 위도/경도로 변환
     const newCenterPosition = projection.coordsFromPoint(newCenterPoint)
 
-    // 4. 이동
+    // 이동
     map.panTo(newCenterPosition)
 }
 
@@ -142,7 +141,7 @@ const handleUpdateRecruitMarkers = () => {
 
     const newRecruitIds = new Set(props.recruitList.map(r => r.id))
 
-    // 1. 리스트에 없는 마커 지도에서 제거
+    // 리스트에 없는 마커 지도에서 제거
     for (const [id, marker] of recruitMarkers.value) {
         if (!newRecruitIds.has(id)) {
             marker.setMap(null)
@@ -150,11 +149,11 @@ const handleUpdateRecruitMarkers = () => {
         }
     }
 
-    // 2. 마커 생성 및 갱신 (직접 DOM 조작 방식)
+    // 마커 생성 및 갱신 (직접 DOM 조작 방식)
     props.recruitList.forEach(recruit => {
         if (!recruit.startLat || !recruit.startLng) return
 
-        // ⭐️ HTML 내용을 그려주는 헬퍼 함수
+        //  HTML 내용을 그려주는 헬퍼 함수
         const updateNodeContent = (node, r) => {
             const isFull = r.cur >= r.max
             const bgColor = isFull ? '#64748b' : '#f43f5e'
@@ -166,12 +165,12 @@ const handleUpdateRecruitMarkers = () => {
             `
         }
 
-        // ⭐️ [핵심] 이미 지도에 있는 마커라면?
+        // 이미 지도에 있는 마커라면
         if (recruitMarkers.value.has(recruit.id)) {
             const existingOverlay = recruitMarkers.value.get(recruit.id)
-            // 1) 클릭 시 옛날 데이터가 안 뜨도록 최신 데이터 갱신
+            // 클릭 시 옛날 데이터가 안 뜨도록 최신 데이터 갱신
             existingOverlay.recruitData = recruit
-            // 2) 카카오맵 렌더링 무시하고 브라우저 HTML 노드에 직접 새 숫자 덮어쓰기! (깜빡임 절대 없음)
+            // 카카오맵 렌더링 무시하고 브라우저 HTML 노드에 직접 새 숫자 덮어쓰기! (깜빡임 절대 없음)
             updateNodeContent(existingOverlay.contentNode, recruit)
             return // 새로 만들지 않고 여기서 종료
         }
@@ -192,7 +191,7 @@ const handleUpdateRecruitMarkers = () => {
         // 오버레이 객체에 중요한 정보들을 다 저장해둡니다.
         overlay.recruitId = recruit.id
         overlay.recruitData = recruit // 클릭 이벤트를 위한 최신 데이터
-        overlay.contentNode = contentNode // ⭐️ 이 DOM 노드 주소값을 기억해둬야 나중에 바로 뜯어고칩니다!
+        overlay.contentNode = contentNode
 
         // 클릭 이벤트 (항상 overlay 안에 저장된 최신 데이터를 부모로 올리게 세팅)
         contentNode.addEventListener('click', () => {
