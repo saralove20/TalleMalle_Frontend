@@ -37,13 +37,9 @@ const noticeList = async (req) => {
  * @returns {Promise<Object>} 해당 ID의 공지사항 상세 객체
  */
 const getNoticeDetail = async (noticeId) => {
-  const res = await api.get('/json/notice_detail')
+  const res = await api.get('/notices/' + noticeId)
   
-  // 전체 목록 중 해당 num(ID)을 가진 데이터만 찾아서 반환
-  // JSON 구조가 { "1": {...}, "2": {...} } 형태라고 가정
-  const detailData = res.data.data[noticeId]
-  
-  return { data: detailData }
+  return res.data
 }
 
 /**

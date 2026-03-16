@@ -1,8 +1,11 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import api from '@/api/notice/index.js' // API 임포트
 import { Calendar, Eye } from 'lucide-vue-next' // 아이콘 직접 임포트
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import api from '@/api/notice/index.js' // API 임포트
 import PageHeader from '@/components/layout/PageHeader.vue'
 
 const route = useRoute()
@@ -17,15 +20,22 @@ const fetchNoticeDetail = async () => {
     const response = await api.getNoticeDetail(noticeId)
 
     // 2. 데이터 할당
-    // JSON 구조가 { data: { num: 1, title: "..." } } 이므로 response.data를 할당
-    notice.value = response.data
+    notice.value = response
 
     // console.log('불러온 데이터:', notice.value)
   } catch (error) {
-    // console.error('상세 내용을 불러오는데 실패했습니다.', error)
+    console.error('상세 내용을 불러오는데 실패했습니다.', error)
   } finally {
     isLoading.value = false
   }
+}
+
+// 날짜 포맷팅
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+const formatDate = (date) => {
+  return dayjs(date).tz('Asia/Seoul').format('YYYY.MM.DD')
 }
 
 onMounted(() => {
@@ -62,7 +72,7 @@ onMounted(() => {
               </h2>
               <div class="flex items-center text-slate-400 text-sm gap-4">
                 <span class="flex items-center gap-1.5"
-                  ><Calendar class="w-4 h-4" /> {{ notice.date }}</span
+                  ><Calendar class="w-4 h-4" /> {{ formatDate(notice.createdAt) }}</span
                 >
                 <span class="flex items-center gap-1.5"
                   ><Eye class="w-4 h-4" /> 조회수 {{ notice.views.toLocaleString() }}</span
@@ -71,20 +81,9 @@ onMounted(() => {
             </div>
 
             <div class="text-slate-600 leading-[1.8] text-base space-y-6">
-              <p class="font-bold text-slate-800 text-lg">{{ notice.content.greeting }}</p>
-              <p>{{ notice.content.intro }}</p>
-
-              <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-3">
-                <p class="font-bold text-indigo-600">{{ notice.content.main_points_title }}</p>
-                <ul class="list-disc list-inside space-y-2 text-sm text-slate-500">
-                  <li v-for="(point, index) in notice.content.main_points" :key="index">
-                    {{ point }}
-                  </li>
-                </ul>
-              </div>
-
-              <p>{{ notice.content.outro }}</p>
-              <p>{{ notice.content.closing }}</p>
+              <p class="font-bold text-slate-800 text-lg">안녕하세요, 탈래말래 팀입니다.</p>
+              <p>{{ notice.contents }}</p>
+              <p>감사합니다.</p>
             </div>
 
             <div class="pt-10 flex justify-center">

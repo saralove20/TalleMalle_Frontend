@@ -151,7 +151,7 @@ onMounted(() => {
             <button
               v-if="canWriteNotice && activeTab === 'notice'"
               @click="goToWrite"
-              class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-[1.25rem] text-sm font-bold transition-all shadow-md shadow-slate-200 active:scale-95"
+              class="flex items-center gap-2 bg-slate-800 hover:bg-indigo-600 text-white px-6 py-3 rounded-[1.25rem] text-sm font-bold transition-all shadow-md shadow-slate-200 active:scale-95"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
