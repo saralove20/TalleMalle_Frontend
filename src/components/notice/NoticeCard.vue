@@ -53,7 +53,7 @@ const getTagClass = computed(() => {
 
 <template>
   <RouterLink
-    :to="{ name: 'noticedetail', params: { num: item.idx } }"
+    :to="{ name: 'noticedetail', params: { idx: item.idx } }"
     custom
     v-slot="{ navigate }"
   >

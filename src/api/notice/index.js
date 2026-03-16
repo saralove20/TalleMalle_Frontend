@@ -13,11 +13,21 @@ import api from '@/plugins/axiosinterceptor'
 
 /**
  * 공지사항 작성
- * @param {Object} noticeData - 등록할 공지사항 데이터 (title, contents, tag, is_pinned 등)
+ * @param {Object} req - 등록할 공지사항 데이터 (title, contents, tag, is_pinned 등)
  * @returns {Promise<Object>} 서버 처리 결과 및 생성된 게시글 정보
  */
 const createNotice = async (req) => {
   const res = await api.post('/notices', req)
+  return res.data
+}
+
+/**
+ * 공지사항 수정
+ * @param {String|Number} noticeId - 공지사항 고유 식별자
+ * @param {Object} req - 수정할 공지사항 데이터 (title, contents, tag, is_pinned 등)
+ */
+const updateNotice = async (noticeId, req) => {
+  const res = await api.patch(`/notices/${noticeId}`, req)
   return res.data
 }
 
@@ -52,4 +62,4 @@ const faqList = async (req) => {
   return res.data
 }
 
-export default { createNotice, noticeList, getNoticeDetail, faqList }
+export default { createNotice, updateNotice, noticeList, getNoticeDetail, faqList }

@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Calendar, Eye } from 'lucide-vue-next' // 아이콘 직접 임포트
+import { useAuthStore } from '@/stores/auth.js'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
@@ -9,12 +10,27 @@ import api from '@/api/notice/index.js' // API 임포트
 import PageHeader from '@/components/layout/PageHeader.vue'
 
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 const notice = ref(null) // 공지사항 전체 데이터를 담을 객체
 const isLoading = ref(true)
 
+/**
+ * 권한 체크: 글 수정 버튼 노출 여부
+ */
+const canEditNotice = computed(() => {
+  return authStore.user.role === 'ROLE_ADMIN'
+
+  // return true // 테스트용: 모든 유저에게 노출
+})
+
+const goToEdit = () => {
+  router.push({ name: 'noticeEdit' , params: { idx: route.params.idx }})
+}
+
 const fetchNoticeDetail = async () => {
   try {
-    const noticeId = route.params.num // URL에서 번호 가져오기
+    const noticeId = route.params.idx // URL에서 번호 가져오기
 
     // 1. API 호출
     const response = await api.getNoticeDetail(noticeId)
@@ -86,10 +102,18 @@ onMounted(() => {
               <p>감사합니다.</p>
             </div>
 
-            <div class="pt-10 flex justify-center">
+            <div class="pt-10 flex justify-center gap-3">
+              <button
+                v-if="canEditNotice"
+                @click="goToEdit"
+                class="flex items-center gap-2 bg-slate-800 hover:bg-indigo-600 text-white px-8 py-4 rounded-[1.25rem] text-sm font-bold transition-all shadow-md shadow-slate-200 active:scale-95"
+              >
+                공지 수정
+              </button>
+
               <button
                 @click="$router.push('/notice')"
-                class="px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-indigo-600 transition-all shadow-lg shadow-slate-200"
+                class="px-8 py-4 bg-slate-800 text-white rounded-[1.25rem] text-sm font-bold hover:bg-indigo-600 transition-all shadow-lg shadow-slate-200 active:scale-95"
               >
                 목록으로 돌아가기
               </button>

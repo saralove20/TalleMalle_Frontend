@@ -52,10 +52,16 @@ const router = createRouter({
       path: '/notice/write',
       name: 'noticeWrite',
       component: NoticeWrite,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, isEdit: false },
     },
     {
-      path: '/noticedetail/:num',
+      path: '/notice/edit/:idx',
+      name: 'noticeEdit',
+      component: NoticeWrite,
+      meta: { requiresAuth: true, isEdit: true },
+    },
+    {
+      path: '/noticedetail/:idx',
       name: 'noticedetail',
       component: NoticeDetail,
       meta: { requiresAuth: true },

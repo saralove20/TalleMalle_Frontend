@@ -4,8 +4,8 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/notice/index.js'
 import PageHeader from '@/components/layout/PageHeader.vue'
 
@@ -14,20 +14,24 @@ import PageHeader from '@/components/layout/PageHeader.vue'
  * 2. STATE & REFS (상태 관리)
  * ==============================================================================
  */
+const route = useRoute()
 const router = useRouter()
+
+// 1. 현재 모드 판별 (URL에 idx 파라미터가 있으면 수정 모드)
+const isEditMode = computed(() => !!route.params.idx)
 
 // DB 구조에 맞춘 데이터 모델
 const notice = ref({
   title: '',
   contents: '',
-  tag: '일반',
-  isPinned: 0
+  tag: '공지', // 기본값을 tagOptions와 스타일 키에 맞춰 '공지'로 변경
+  isPinned: 0,
 })
 
-// 요청하신 5가지 태그 옵션
-const tagOptions = ['일반', '업데이트', '이벤트', '점검', '긴급']
+// 태그 옵션 (스타일 키와 일치시킴)
+const tagOptions = ['공지', '업데이트', '이벤트', '점검', '긴급']
 
-// 비활성 상태 스타일
+// 비활성 상태 스타일 (파스텔톤)
 const tagStyles = {
   공지: 'bg-yellow-50 text-yellow-600',
   업데이트: 'bg-blue-50 text-blue-500',
@@ -36,7 +40,7 @@ const tagStyles = {
   긴급: 'bg-red-50 text-red-600',
 }
 
-// 활성 상태 스타일
+// 활성 상태 스타일 (선명한 톤)
 const activeTagStyles = {
   공지: 'bg-yellow-400 text-white shadow-yellow-100',
   업데이트: 'bg-blue-600 text-white shadow-md',
@@ -50,6 +54,28 @@ const activeTagStyles = {
  * 3. METHODS (서버 연동 및 UI 핸들러)
  * ==============================================================================
  */
+
+// 수정 모드일 경우 기존 데이터 불러오기
+const fetchDetail = async () => {
+  // 1. 수정 모드가 아니면 실행 안 함
+  if (!isEditMode.value) return
+
+  try {
+    const res = await api.getNoticeDetail(route.params.idx)
+    // 서버 응답 구조가 res.data일 경우를 대비해 처리
+    const data = res.data || res
+    notice.value = {
+      title: data.title,
+      contents: data.contents,
+      tag: data.tag || '공지',
+      isPinned: data.isPinned || 0,
+    }
+  } catch (error) {
+    console.error('데이터 로드 실패:', error)
+    alert('기존 공지사항 정보를 불러오지 못했습니다.')
+  }
+}
+
 const submitNotice = async () => {
   if (!notice.value.title.trim() || !notice.value.contents.trim()) {
     alert('제목과 내용을 모두 입력해주세요.')
@@ -57,19 +83,30 @@ const submitNotice = async () => {
   }
 
   try {
-    // API 호출 (기존 api 구조에 맞게 설정)
-    await api.createNotice(notice.value)
-    alert('공지사항이 성공적으로 등록되었습니다.')
-    router.push('/notice') // 등록 후 목록으로 이동
+    if (isEditMode.value) {
+      // 수정 API 호출
+      await api.updateNotice(route.params.idx, notice.value)
+      alert('공지사항이 수정되었습니다.')
+    } else {
+      // 등록 API 호출
+      await api.createNotice(notice.value)
+      alert('공지사항이 성공적으로 등록되었습니다.')
+    }
+
+    router.push('/notice')
   } catch (error) {
-    // console.error('등록 실패:', error)
-    alert('등록 중 오류가 발생했습니다.')
+    console.error(error)
+    alert(isEditMode.value ? '수정 중 오류가 발생했습니다.' : '등록 중 오류가 발생했습니다.')
   }
 }
 
 const goBack = () => {
   router.go(-1)
 }
+
+onMounted(() => {
+  fetchDetail()
+})
 </script>
 
 <template>
@@ -81,11 +118,15 @@ const goBack = () => {
 
     <div class="flex-1 glass-panel rounded-[2.5rem] overflow-hidden flex flex-col">
       <PageHeader
-        title="공지사항 작성"
-        description="새로운 소식을 작성하여 사용자들에게 알리세요."
+        :title="isEditMode ? '공지사항 수정' : '공지사항 작성'"
+        :description="
+          isEditMode
+            ? '기존 공지 내용을 수정하고 업데이트하세요.'
+            : '새로운 소식을 작성하여 사용자들에게 알리세요.'
+        "
       />
 
-      <div class="flex-1 overflow-y-auto custom-scroll p-8">
+      <div class="flex-1 overflow-y-auto custom-scroll bg-white p-8">
         <div class="max-w-5xl mx-auto space-y-6">
           <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10 space-y-8">
             <div class="flex flex-wrap items-center gap-6">
@@ -101,7 +142,8 @@ const goBack = () => {
                       'px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 border border-transparent',
                       notice.tag === tag
                         ? activeTagStyles[tag] + ' shadow-lg -translate-y-0.5'
-                        : tagStyles[tag] + ' hover:border-slate-200',
+                        : (tagStyles[tag] || 'bg-slate-50 text-slate-400') +
+                          ' hover:border-slate-200',
                     ]"
                   >
                     <span v-if="notice.tag === tag" class="mr-1">✓</span>
@@ -165,7 +207,7 @@ const goBack = () => {
                 @click="submitNotice"
                 class="px-10 py-4 rounded-2xl font-bold text-white bg-slate-900 shadow-lg shadow-slate-200 hover:-translate-y-0.5 active:translate-y-0 transition-all"
               >
-                공지사항 등록하기
+                {{ isEditMode ? '공지사항 수정 완료' : '공지사항 등록하기' }}
               </button>
             </div>
           </div>
@@ -174,28 +216,3 @@ const goBack = () => {
     </div>
   </div>
 </template>
-
-<style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
-
-.glass-panel {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px rgba(30, 27, 75, 0.05);
-}
-
-.custom-scroll::-webkit-scrollbar {
-  width: 5px;
-}
-.custom-scroll::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 10px;
-}
-
-/* 입력 필드 포커스 효과 */
-input:focus,
-textarea:focus {
-  outline: none;
-}
-</style>
