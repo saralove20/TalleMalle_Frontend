@@ -29,7 +29,7 @@ const tagOptions = ['일반', '업데이트', '이벤트', '점검', '긴급']
 
 // 비활성 상태 스타일
 const tagStyles = {
-  일반: 'bg-yellow-50 text-yellow-600',
+  공지: 'bg-yellow-50 text-yellow-600',
   업데이트: 'bg-blue-50 text-blue-500',
   이벤트: 'bg-purple-50 text-purple-500',
   점검: 'bg-orange-50 text-orange-600',
@@ -38,7 +38,7 @@ const tagStyles = {
 
 // 활성 상태 스타일
 const activeTagStyles = {
-  일반: 'bg-yellow-400 text-white shadow-yellow-100',
+  공지: 'bg-yellow-400 text-white shadow-yellow-100',
   업데이트: 'bg-blue-600 text-white shadow-md',
   이벤트: 'bg-purple-600 text-white shadow-md',
   점검: 'bg-orange-500 text-white shadow-md',

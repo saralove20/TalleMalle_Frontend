@@ -27,7 +27,7 @@ const createNotice = async (req) => {
  * @returns {Promise<Array>} 공지사항 리스트 데이터
  */
 const noticeList = async (req) => {
-  const res = await api.get('/json/notice', req)
+  const res = await api.get('/notices', req)
   return res.data
 }
 

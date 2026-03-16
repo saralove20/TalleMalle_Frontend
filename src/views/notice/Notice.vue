@@ -46,9 +46,10 @@ const toggleFaq = (index) => {
 const getNoticeList = async () => {
   try {
     const res = await api.noticeList()
-    noticeList.value = res.data || []
+    noticeList.value = res || []
+    console.log("공지사항 목록 조회 성공: ", res)
   } catch (error) {
-    // console.error('공지사항을 불러오는 중 오류 발생:', error)
+    console.error('공지사항을 불러오는 중 오류 발생:', error)
   }
 }
 
