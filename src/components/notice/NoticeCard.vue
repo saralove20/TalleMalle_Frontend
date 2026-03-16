@@ -8,6 +8,7 @@ import { computed } from 'vue'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import { Eye } from 'lucide-vue-next'
 
 /**
  * ==============================================================================
@@ -60,7 +61,7 @@ const getTagClass = computed(() => {
       @click="navigate"
       class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:border-indigo-100 hover:shadow-md transition-all cursor-pointer group"
     >
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex justify-between items-center mb-5">
         <div class="flex gap-2">
           <span
             :class="[
@@ -81,9 +82,15 @@ const getTagClass = computed(() => {
         <span class="text-[11px] font-medium text-slate-400">{{ formatDate(item.createdAt) }}</span>
       </div>
 
-      <h3 class="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
-        {{ item.title }}
-      </h3>
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+          {{ item.title }}
+        </h3>
+
+        <span class="flex items-center gap-1.5 text-slate-400 text-[11px]"
+          ><Eye class="w-3 h-3" />조회수 {{ item.views.toLocaleString() }}</span
+        >
+      </div>
     </div>
   </RouterLink>
 </template>
