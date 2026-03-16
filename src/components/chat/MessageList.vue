@@ -4,7 +4,7 @@
  * 1. IMPORTS (라이브러리 -> 컴포넌트)
  * ==============================================================================
  */
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, onMounted } from 'vue'
 import MessageItem from './MessageItem.vue'
 
 /**
@@ -62,8 +62,12 @@ watch(
   () => {
     scrollToBottom()
   },
-  { deep: true },
+  { deep: true, flush: 'post' },
 )
+
+onMounted(() => {
+  scrollToBottom()
+})
 </script>
 
 <template>
