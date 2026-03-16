@@ -6,7 +6,17 @@ self.addEventListener('push', (event) => {
     data: data,
   }
 
-  event.waitUntil(self.registration.showNotification(title, options))
+  event.waitUntil(
+    (async () => {
+      await self.registration.showNotification(title, options)
+      if (data.recruitId) {
+        const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true })
+        clientList.forEach((client) => {
+          client.postMessage({ type: 'chat-unread', recruitId: data.recruitId })
+        })
+      }
+    })(),
+  )
 })
 
 self.addEventListener('notificationclick', (event) => {
