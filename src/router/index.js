@@ -15,6 +15,7 @@ import BlockList from '@/views/info/BlockList.vue'
 import Notice from '@/views/notice/Notice.vue'
 import NoticeDetail from '@/views/notice/NoticeDetail.vue'
 import NoticeWrite from '@/views/notice/NoticeWrite.vue'
+import Notification from '@/views/info/Notification.vue'
 import Terms from '@/views/info/Terms.vue'
 import Privacy from '@/views/info/Privacy.vue'
 import DriverLogin from '@/views/driver/DriverLogin.vue'
@@ -70,6 +71,11 @@ const router = createRouter({
       component: NoticeDetail,
       meta: { requiresAuth: true },
     },
+    {
+      path: '/notification',
+      name: 'notification',
+      component: Notification,
+      meta: { requiresAuth: true }},
     { path: '/terms', name: 'terms', component: Terms, meta: { requiresAuth: true } },
     { path: '/privacy', name: 'privacy', component: Privacy, meta: { requiresAuth: true } },
     // hideNavbar: true 로그인 페이지에선 사이드바 숨김
