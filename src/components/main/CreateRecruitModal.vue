@@ -11,7 +11,6 @@ import { X } from 'lucide-vue-next'
 import LocationInput from '@/components/main/inputs/LocationInput.vue'
 import TimeSelect from '@/components/main/inputs/TimeSelect.vue'
 import MemberCounter from '@/components/main/inputs/MemberCounter.vue'
-import TagInput from '@/components/main/inputs/TagInput.vue'
 import Textarea from '@/components/main/inputs/Textarea.vue'
 
 /**
@@ -27,18 +26,26 @@ const emit = defineEmits(['close', 'submit'])
  * 3. STATE & REFS (상태 변수 선언)
  * ==============================================================================
  */
+// 현재 시간에서 10분 뒤의 시간을 'HH:mm' 형태로 반환하는 함수
+const getDefaultTime = () => {
+    const now = new Date()
+    now.setMinutes(now.getMinutes() + 10)
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    return `${hours}:${minutes}`
+}
+
 // 폼 데이터
 const form = ref({
     start: '',
-    startLat: null, // 출발지 위도
-    startLng: null, // 출발지 경도
+    startLat: null,
+    startLng: null,
     dest: '',
-    destLat: null,  // 도착지 위도
-    destLng: null,  // 도착지 경도
-    time: 'Now',
+    destLat: null,
+    destLng: null,
+    time: getDefaultTime(),
     maxMember: 3,
-    tags: '',
-    desc: ''
+    description: ''
 })
 
 /**
@@ -69,35 +76,27 @@ const handleDestSelect = (location) => {
 
 // 폼 제출 핸들러
 const handleFormSubmit = () => {
-    // 구조 분해 할당으로 폼 데이터 가져오기
-    const { start, startLat, startLng, dest, destLat, destLng, time, maxMember, tags, desc } = form.value
+    const { start, startLat, startLng, dest, destLat, destLng, time, maxMember, description } = form.value
 
-    // 유효성 검사 (좌표가 있는지까지 확인하면 더 좋음)
     if (!start || !dest) {
         alert('출발지와 목적지를 입력해주세요.')
         return
     }
-
-    // 좌표가 누락되었을 경우 (텍스트만 입력하고 리스트 선택 안 했을 때) 경고 처리 가능
     if (!startLat || !destLat) {
         alert('목록에서 정확한 장소를 선택해주세요.')
         return
     }
 
-    const tagArray = tags ? tags.split(' ').map(t => t.startsWith('#') ? t : `#${t}`) : []
-
-    // 부모(HomeView)에게 데이터 전송 (좌표 포함)
     emit('submit', {
         start,
-        startLat, // 전송 데이터에 포함
-        startLng, // 전송 데이터에 포함
+        startLat,
+        startLng,
         dest,
-        destLat,  // 전송 데이터에 포함
-        destLng,  // 전송 데이터에 포함
+        destLat,
+        destLng,
         time,
         max: maxMember,
-        tags: tagArray,
-        desc
+        description
     })
 }
 </script>
@@ -131,9 +130,7 @@ const handleFormSubmit = () => {
                         <MemberCounter label="모집 인원" v-model="form.maxMember" />
                     </div>
 
-                    <TagInput label="태그 (선택)" v-model="form.tags" placeholder="예: #비흡연 #여성전용" />
-
-                    <Textarea label="하고 싶은 말" v-model="form.desc" placeholder="예: 짐이 조금 있어요" />
+                    <Textarea label="하고 싶은 말" v-model="form.description" placeholder="예: 짐이 조금 있어요" />
                 </div>
 
                 <div class="p-6 border-t border-slate-100 bg-white">
