@@ -5,7 +5,8 @@
  * ==============================================================================
  */
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Radio } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Radio, List, ClipboardList } from 'lucide-vue-next'
 import driverApi from '@/api/driver'
 import { useWebSocket } from '@/composables/useWebSocket'
 import taxiImg from '@/assets/images/taxi.png'
@@ -23,6 +24,7 @@ import DriverCallModal from '@/components/driver/DriverCallModal.vue'
  * 2. CONFIG & STORES
  * ==============================================================================
  */
+const router = useRouter()
 const { connect, sendMessage, isConnected } = useWebSocket()
 
 /**
@@ -308,11 +310,25 @@ onUnmounted(() => {
     </div>
 
     <div v-if="!isDriving && !showPickupSheet"
-      class="absolute inset-x-0 bottom-8 flex justify-center z-20 pointer-events-none pb-safe">
-      <button @click="triggerCall"
-        class="pointer-events-auto w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-full flex items-center justify-center text-white shadow-lg animate-pulse active:scale-95">
-        <Radio class="w-8 h-8" />
-      </button>
+      class="absolute inset-x-0 bottom-0 z-20 pb-safe">
+      <div class="mx-4 mb-6 bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 flex items-center justify-around px-4 py-3">
+        <button @click="router.push('/driver/calls')"
+          class="flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-400 active:scale-95 transition-all px-4 py-1">
+          <List class="w-6 h-6" />
+          <span class="text-xs font-medium">콜 목록</span>
+        </button>
+
+        <button @click="triggerCall"
+          class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-900/50 animate-pulse active:scale-95 transition-all">
+          <Radio class="w-8 h-8" />
+        </button>
+
+        <button @click="router.push('/driver/history')"
+          class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-400 active:scale-95 transition-all px-4 py-1">
+          <ClipboardList class="w-6 h-6" />
+          <span class="text-xs font-medium">운행 내역</span>
+        </button>
+      </div>
     </div>
 
     <DriverPickupSheet :show="showPickupSheet" :passenger-name="passengerName"
