@@ -68,7 +68,7 @@ const getNoticeDetail = async (noticeId) => {
  * @returns {Promise<Array>} FAQ 리스트 데이터
  */
 const faqList = async (req) => {
-  const res = await api.get('/json/faq', req)
+  const res = await api.get('/faqs')
   return res.data
 }
 
