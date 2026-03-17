@@ -79,7 +79,7 @@ const getNoticeList = async () => {
 const getFaqList = async () => {
   try {
     const res = await api.faqList()
-    faqs.value = res.data || res
+    faqs.value = res
   } catch (error) {
     // console.error('FAQ를 불러오는 중 오류 발생:', error)
   }
