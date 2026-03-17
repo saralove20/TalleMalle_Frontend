@@ -100,64 +100,97 @@ const goToNotifications = () => {
   router.push('/notification')
 }
 
-// 알림 클릭 핸들러 (읽음 처리)
-const handleNotificationClick = (id) => {
-  notificationStore.markAsRead(id)
+// 알림 클릭 핸들러 (읽음 처리) - id 대신 idx 사용
+const handleNotificationClick = async (idx) => {
+  try {
+    await notificationApi.readNotification(idx)
+    notificationStore.markAsRead(idx)
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 // 알림 아이콘/스타일 매핑
 const getNotificationStyle = (type) => {
   switch (type) {
     case 'matching':
-      return { icon: UserPlus, bg: 'bg-indigo-50', text: 'text-indigo-600', label: 'text-indigo-500', name: '매칭' }
+      return {
+        icon: UserPlus,
+        bg: 'bg-indigo-50',
+        text: 'text-indigo-600',
+        label: 'text-indigo-500',
+        name: '매칭',
+      }
     case 'event':
-      return { icon: Gift, bg: 'bg-pink-50', text: 'text-pink-600', label: 'text-pink-500', name: '이벤트' }
+      return {
+        icon: Gift,
+        bg: 'bg-pink-50',
+        text: 'text-pink-600',
+        label: 'text-pink-500',
+        name: '이벤트',
+      }
     case 'payment':
-      return { icon: CreditCard, bg: 'bg-amber-50', text: 'text-amber-600', label: 'text-amber-500', name: '결제' }
+      return {
+        icon: CreditCard,
+        bg: 'bg-amber-50',
+        text: 'text-amber-600',
+        label: 'text-amber-500',
+        name: '결제',
+      }
     default:
-      return { icon: Bell, bg: 'bg-slate-100', text: 'text-slate-500', label: 'text-slate-500', name: '알림' }
+      return {
+        icon: Bell,
+        bg: 'bg-slate-100',
+        text: 'text-slate-500',
+        label: 'text-slate-500',
+        name: '알림',
+      }
   }
 }
 
 // [Computed] 최신 알림 5개 정렬 및 추출
 const recentNotifications = computed(() => {
-  // 1. 원본 데이터를 복사([...]) 후 정렬
-  const sorted = [...notifications.value].sort((a, b) => {
-    // 안 읽은 것 우선 정렬
-    if (a.isRead === b.isRead) return 0
-    return a.isRead ? 1 : -1
+  // 💡 철벽 방어: 확실한 배열(Array)인지 검사
+  const safeList = Array.isArray(notifications.value) ? notifications.value : []
+
+  const sorted = [...safeList].sort((a, b) => {
+    if (a.read === b.read) return 0
+    return a.read ? 1 : -1
   })
-  // 2. 상위 5개만 자르기
   return sorted.slice(0, 5)
 })
 
 // [Computed] 읽지 않은 알림 개수
-// const unreadCount = computed(() => {
-//   return notifications.value.filter((n) => !n.isRead).length
-// })
+const unreadCount = computed(() => {
+  // 💡 철벽 방어: 확실한 배열(Array)인지 검사
+  const safeList = Array.isArray(notifications.value) ? notifications.value : []
+  return safeList.filter((n) => !n.read).length
+})
+
+// 초기 알림 데이터 로드 (API 호출 -> Store 저장)
+const loadInitialNotifications = async () => {
+  try {
+    const safeList = notifications.value || []
+
+    if (safeList.length === 0) {
+      // 백엔드 페이징 규격에 맞춰 호출 (page 0, size 10)
+      const res = await notificationApi.getNotificationList(0, 10)
+
+      if (res?.data?.result?.boardList) {
+        notificationStore.setNotifications(res.data.result.boardList)
+      }
+    }
+  } catch (error) {
+    console.error('네비게이션 초기 알림 로드 실패:', error)
+  }
+}
 
 /**
  * ==============================================================================
  * 5. METHODS - API & NETWORK
  * ==============================================================================
  */
-// 초기 알림 데이터 로드 (API 호출 -> Store 저장)
-const loadInitialNotifications = async () => {
-  try {
-    // 이미 데이터가 있다면 API 호출 건너뜀 (최적화)
-    if (notifications.value.length === 0) {
-      const res = await notificationApi.getNotificationList()
 
-      if (res && res.data) {
-        // Store의 Setter 액션 호출
-        notificationStore.setNotifications(res.data)
-      }
-    }
-  } catch (error) {
-    // Nav바에서는 에러가 나도 사용자에게 굳이 알리지 않고(조용히 실패), 콘솔에만 남김
-    console.error('네비게이션 초기 알림 로드 실패:', error)
-  }
-}
 
 /**
  * ==============================================================================
@@ -196,7 +229,8 @@ onUnmounted(() => {
 <template>
   <div class="relative h-full z-50">
     <div
-      class="glass-panel w-20 h-full rounded-[2.5rem] flex flex-col items-center py-8 pointer-events-auto shrink-0 bg-white border border-slate-200 shadow-xl relative z-40">
+      class="glass-panel w-20 h-full rounded-[2.5rem] flex flex-col items-center py-8 pointer-events-auto shrink-0 bg-white border border-slate-200 shadow-xl relative z-40"
+    >
       <div class="mb-12">
         <div class="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-200">
           <CarFront class="text-white w-6 h-6" />
@@ -204,70 +238,132 @@ onUnmounted(() => {
       </div>
 
       <div class="flex-1 flex flex-col gap-4">
-        <RouterLink to="/" class="nav-item p-3 rounded-2xl transition-all"
-          :class="isActive('/') ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'">
+        <RouterLink
+          to="/"
+          class="nav-item p-3 rounded-2xl transition-all"
+          :class="
+            isActive('/')
+              ? 'text-indigo-600 bg-indigo-50'
+              : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+          "
+        >
           <Home class="w-6 h-6" />
         </RouterLink>
 
-        <a @click.prevent="handleChatClick" class="nav-item p-3 rounded-2xl transition-all relative cursor-pointer"
-          :class="isActive('/chat') ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'">
+        <a
+          @click.prevent="handleChatClick"
+          class="nav-item p-3 rounded-2xl transition-all relative cursor-pointer"
+          :class="
+            isActive('/chat')
+              ? 'text-indigo-600 bg-indigo-50'
+              : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+          "
+        >
           <MessageCircle class="w-6 h-6" />
-          <span v-if="hasUnread"
-            class="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+          <span
+            v-if="hasUnread"
+            class="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"
+          ></span>
         </a>
 
-        <button ref="toggleBtnRef" @click="toggleNotification" class="nav-item p-3 rounded-2xl transition-all relative"
-          :class="(showNotifications || route.path === '/notification') ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'">
+        <button
+          ref="toggleBtnRef"
+          @click="toggleNotification"
+          class="nav-item p-3 rounded-2xl transition-all relative"
+          :class="
+            showNotifications || route.path === '/notification'
+              ? 'text-indigo-600 bg-indigo-50'
+              : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+          "
+        >
           <Bell class="w-6 h-6" />
-          <span v-if="unreadCount > 0"
-            class="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+          <span
+            v-if="unreadCount > 0"
+            class="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"
+          ></span>
         </button>
 
-        <RouterLink to="/notice" class="nav-item p-3 rounded-2xl transition-all"
-          :class="isActive('/notice') ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'">
+        <RouterLink
+          to="/notice"
+          class="nav-item p-3 rounded-2xl transition-all"
+          :class="
+            isActive('/notice')
+              ? 'text-indigo-600 bg-indigo-50'
+              : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+          "
+        >
           <Megaphone class="w-6 h-6" />
         </RouterLink>
       </div>
 
       <div class="flex flex-col gap-4 items-center">
-        <RouterLink to="/setting" class="nav-item p-3 rounded-2xl transition-all"
-          :class="isActive('/setting') ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'">
+        <RouterLink
+          to="/setting"
+          class="nav-item p-3 rounded-2xl transition-all"
+          :class="
+            isActive('/setting')
+              ? 'text-indigo-600 bg-indigo-50'
+              : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+          "
+        >
           <Settings class="w-6 h-6" />
         </RouterLink>
 
-        <RouterLink to="/mypage"
+        <RouterLink
+          to="/mypage"
           class="w-10 h-10 rounded-full bg-slate-200 border-2 shadow-sm overflow-hidden cursor-pointer hover:border-indigo-400 transition-all"
-          :class="isActive('/mypage') ? 'border-indigo-600 ring-4 ring-indigo-50' : 'border-white'">
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="profile"
-            class="w-full h-full object-cover" />
+          :class="isActive('/mypage') ? 'border-indigo-600 ring-4 ring-indigo-50' : 'border-white'"
+        >
+          <img
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+            alt="profile"
+            class="w-full h-full object-cover"
+          />
         </RouterLink>
 
-        <button @click="authStore.logout()"
-          class="nav-item p-3 rounded-2xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all mt-2">
+        <button
+          @click="authStore.logout()"
+          class="nav-item p-3 rounded-2xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all mt-2"
+        >
           <LogOut class="w-6 h-6" />
         </button>
       </div>
     </div>
 
-    <div v-if="showNotifications" ref="notificationRef"
-      class="absolute left-[100px] top-[220px] w-[320px] bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 z-50 flex flex-col gap-4 origin-top-left transition-all">
+    <div
+      v-if="showNotifications"
+      ref="notificationRef"
+      class="absolute left-[100px] top-[220px] w-[320px] bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 z-50 flex flex-col gap-4 origin-top-left transition-all"
+    >
       <div class="flex justify-between items-center border-b border-slate-50 pb-4">
         <h3 class="font-bold text-slate-900 text-lg">실시간 알림</h3>
-        <span v-if="unreadCount > 0" class="text-xs font-bold text-white bg-rose-500 px-2 py-0.5 rounded-full">
+        <span
+          v-if="unreadCount > 0"
+          class="text-xs font-bold text-white bg-rose-500 px-2 py-0.5 rounded-full"
+        >
           {{ unreadCount }} new
         </span>
       </div>
 
       <div class="flex flex-col gap-4 max-h-[300px] overflow-y-auto custom-scroll">
-        <div v-if="recentNotifications.length === 0" class="text-center py-8 text-slate-400 text-xs">
+        <div
+          v-if="recentNotifications.length === 0"
+          class="text-center py-8 text-slate-400 text-xs"
+        >
           새로운 알림이 없습니다.
         </div>
 
-        <div v-for="item in recentNotifications" :key="item.id" @click="handleNotificationClick(item.id)"
+        <div
+          v-for="item in recentNotifications"
+          :key="item.id"
+          @click="handleNotificationClick(item.id)"
           class="flex gap-4 items-start group cursor-pointer hover:bg-slate-50 p-2 rounded-2xl transition-colors relative"
-          :class="{ 'opacity-50': item.isRead }">
-          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
-            :class="[getNotificationStyle(item.type).bg, getNotificationStyle(item.type).text]">
+          :class="{ 'opacity-50': item.isRead }"
+        >
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
+            :class="[getNotificationStyle(item.type).bg, getNotificationStyle(item.type).text]"
+          >
             <component :is="getNotificationStyle(item.type).icon" class="w-5 h-5" />
           </div>
 
@@ -287,8 +383,10 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <button @click="goToNotifications"
-        class="w-full py-3 mt-2 text-xs font-bold text-slate-400 bg-slate-50 hover:bg-slate-100 hover:text-slate-600 rounded-xl transition-all">
+      <button
+        @click="goToNotifications"
+        class="w-full py-3 mt-2 text-xs font-bold text-slate-400 bg-slate-50 hover:bg-slate-100 hover:text-slate-600 rounded-xl transition-all"
+      >
         전체보기
       </button>
     </div>
