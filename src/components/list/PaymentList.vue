@@ -4,7 +4,7 @@
  * 1. IMPORTS (라이브러리 -> 스토어/API/Composable -> 컴포넌트)
  * ==============================================================================
  */
-import { computed, onMounted, shallowRef } from 'vue'
+import { computed } from 'vue'
 import { CreditCard } from 'lucide-vue-next'
 
 // Stores
@@ -21,11 +21,6 @@ import PaymentEntry from '@/components/entry/PaymentEntry.vue'
  */
 const profileStore = useProfileStore()
 const emits = defineEmits(['register-payment', 'manage-payment'])
-
-const paymentInst = shallowRef(null)
-
-const clientKey = 'test_ck_Gv6LjeKD8aYKA6qPb5QL8wYxAdXy'
-const customerKey = 'j0SuRMJPCavNZRpeHnfBB'
 
 /**
  * ==============================================================================
@@ -50,27 +45,10 @@ const sortedList = computed(() => {
  * 4. METHODS - UI & LOGIC (기능 처리 및 이벤트 핸들러)
  * ==============================================================================
  */
-
-// 토스 페이먼츠 SDK 초기회
-const initTossPaymentsSDK = () => {
-  const tossPayments = TossPayments(clientKey)
-  paymentInst.value = tossPayments.payment({ customerKey })
-}
-
 // 결제 수단 추가 핸들러
-const handleRegisterPayment = async () => {
-  await paymentInst.value.requestBillingAuth({
-    method: 'CARD', // 자동결제(빌링)는 카드만 지원합니다
-    successUrl: window.location.origin + '/api/payment/enroll', // 요청이 성공하면 리다이렉트되는 URL
-    failUrl: window.location.origin + '/fail', // 요청이 실패하면 리다이렉트되는 URL
-    customerEmail: 'customer123@gmail.com',
-    customerName: '김토스',
-  })
+const handleRegisterPayment = () => {
+  emits('register-payment')
 }
-
-onMounted(() => {
-  initTossPaymentsSDK()
-})
 
 // 결제 수단 관리(수정/삭제) 핸들러
 const handleManagePayment = (card) => {
