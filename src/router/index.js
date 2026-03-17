@@ -2,8 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useRecruitStore } from '@/stores/recruit'
 import Main from '@/views/service/Main.vue'
 import Login from '@/views/auth/Login.vue'
+import SocialLoginSuccess from '@/views/auth/SocialLoginSuccess.vue'
 import Signup from '@/views/auth/Signup.vue'
-import SignupOldVersion from '@/views/auth/SignupOldVersion.vue'
+import signupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
 import Chat from '@/views/service/Chat.vue'
 import MyPage from '@/views/user/MyPage.vue'
 import FindPassword from '@/views/auth/FindPassword.vue'
@@ -11,19 +12,20 @@ import ResetPassword from '@/views/auth/ResetPassword.vue'
 import Setting from '@/views/info/Setting.vue'
 import ChangePassword from '@/views/auth/ChangePassword.vue'
 import BlockList from '@/views/info/BlockList.vue'
-import Notice from '@/views/info/Notice.vue'
-import Notification from '@/views/info/Notification.vue'
+import Notice from '@/views/notice/Notice.vue'
+import NoticeDetail from '@/views/notice/NoticeDetail.vue'
+import NoticeWrite from '@/views/notice/NoticeWrite.vue'
 import Terms from '@/views/info/Terms.vue'
 import Privacy from '@/views/info/Privacy.vue'
 import DriverLogin from '@/views/driver/DriverLogin.vue'
 import DriverSignup from '@/views/driver/DriverSignup.vue'
 import DriverPage from '@/views/driver/DriverPage.vue'
-import NoticeDetail from '@/views/info/NoticeDetail.vue'
 import SafeNumberSetting from '@/views/info/SafeNumberSetting.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // 형식 맞추기 + 라우터 별 주석 달기
     { path: '/', alias: '/main', name: 'main', component: Main, meta: { requiresAuth: true } },
     {
       path: '/chat/:id?',
@@ -48,22 +50,40 @@ const router = createRouter({
     },
     { path: '/notice', name: 'notice', component: Notice, meta: { requiresAuth: true } },
     {
-      path: '/noticedetail/:num',
-      name: 'noticedetail',
-      component: NoticeDetail,
-      meta: { requiresAuth: true },
+      path: '/notice/write',
+      name: 'noticeWrite',
+      component: NoticeWrite,
+      meta: { requiresAuth: true, isEdit: false },
     },
     {
-      path: '/notification',
-      name: 'notification',
-      component: Notification,
+      path: '/notice/edit/:idx',
+      name: 'noticeEdit',
+      component: NoticeWrite,
+      meta: { requiresAuth: true, isEdit: true },
+    },
+    {
+      path: '/noticedetail/:idx',
+      name: 'noticedetail',
+      component: NoticeDetail,
       meta: { requiresAuth: true },
     },
     { path: '/terms', name: 'terms', component: Terms, meta: { requiresAuth: true } },
     { path: '/privacy', name: 'privacy', component: Privacy, meta: { requiresAuth: true } },
     // hideNavbar: true 로그인 페이지에선 사이드바 숨김
     { path: '/login', name: 'login', component: Login, meta: { hideNavbar: true } },
+    {
+      path: '/social/success',
+      name: 'SocialLoginSuccess',
+      component: SocialLoginSuccess,
+      meta: { hideNavbar: true },
+    },
     { path: '/signup', name: 'signup', component: Signup, meta: { hideNavbar: true } },
+    {
+      path: '/signup/extra',
+      name: 'signupExtraInfo',
+      component: signupExtraInfo,
+      meta: { hideNavbar: true },
+    },
     {
       path: '/findpassword',
       name: 'findpassword',
@@ -115,11 +135,17 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const recruitStore = useRecruitStore()
   const user = localStorage.getItem('USERINFO')
+  const hasToken = document.cookie.includes('ATOKEN')
   const myStatus = localStorage.getItem('myStatus')
 
+  console.log('체크 결과 - 유저정보:', !!user, '토큰존재:', hasToken)
+
   // 로그인 체크 (requiresAuth)
-  if (to.meta.requiresAuth && !user) {
+  if (to.meta.requiresAuth && !user && !hasToken) {
+    alert('로그인이 필요한 서비스입니다.')
     next('/login')
+  } else {
+    return next()
   }
 
   // 참여 상태 체크

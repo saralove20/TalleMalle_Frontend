@@ -4,7 +4,7 @@
  * 1. IMPORTS (라이브러리 -> 스토어/API/Composable -> 컴포넌트)
  * ==============================================================================
  */
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
@@ -36,7 +36,7 @@ const recruitStore = useRecruitStore()
 const { status: myStatus, recruitId: myRecruitId } = storeToRefs(recruitStore)
 
 // WebSocket 연결 (Composable 사용)
-const { isConnected, connect, sendMessage } = useWebSocket()
+const { isConnected, connect } = useWebSocket()
 
 /**
  * ==============================================================================
@@ -56,7 +56,6 @@ const displayRoute = ref('경로 미지정')
 
 // UI 상태 (모달, 패널 등)
 const isListPanelOpen = ref(true)
-const isPanelOpen = ref(false)
 const isDetailOpen = ref(false)
 const isCreateModalOpen = ref(false)
 const isLoading = ref(false)
@@ -103,6 +102,31 @@ const mapCenterOffset = computed(() => {
  * 5. METHODS - UI & LOGIC (기능 처리 및 이벤트 핸들러)
  * ==============================================================================
  */
+// 시간 포맷팅 함수
+const formatTime = (dateString) => {
+  if (!dateString) return '시간 미정'
+
+  const date = new Date(dateString)
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${month}월 ${day}일 ${hours}:${minutes}`
+}
+
+// 출발지 키워드 검색 핸들러
+const handleKeywordSearch = (keyword) => {
+  if (!keyword || !keyword.trim()) {
+    alert("검색어를 입력해주세요")
+    return
+  }
+
+  if (mapComponent.value) {
+    mapComponent.value.searchPlace(keyword)
+  }
+}
+
 // 리스트 패널 토글 핸들러
 const handleToggleListPanel = () => {
   isListPanelOpen.value = !isListPanelOpen.value
@@ -127,121 +151,159 @@ const handleSelectRecruit = (recruit) => {
 }
 
 // 채팅방 참여하기 핸들러
-const handleJoinChat = () => {
-  if (!selectedRecruit.value) return
+const handleJoinChat = async () => {
+  if (!selectedRecruit.value) {
+    return
+  }
 
   if (myStatus.value !== 'IDLE') {
     if (myRecruitId.value === selectedRecruit.value.id) {
-      router.push('/chat')
+      router.push(`/chat/${selectedRecruit.value.id}`)
       return
     }
     alert('이미 참여 중인 다른 모집이 있습니다.')
     return
   }
 
-  // 데이터 필드명 안전하게 체크
-  const recruit = selectedRecruit.value
-  const startName = recruit.startPoint || recruit.start || recruit.departure || '출발지 미정'
-  const destName = recruit.destPoint || recruit.dest || recruit.destination || '목적지 미정'
-  const timeInfo = recruit.time || recruit.startTime || '시간 미정'
+  try {
+    const recruitIdx = selectedRecruit.value.id
 
-  // 선택된 모집 정보를 스토어에 저장
-  const rideInfoPayload = {
-    driver: {
-      name: '매칭 대기중',
-      car: '-',
-      plate: '-',
-      type: '택시',
-    },
-    route: {
-      start: startName,
-      dest: destName,
-      startTime: timeInfo,
-      endTime: '-',
-    },
-    payment: {
-      total: 0,
-      mine: 0,
-      status: '결제 대기',
-    },
+    const res = await api.joinRecruit(recruitIdx)
+
+    if (res.data.result) {
+      const recruit = selectedRecruit.value
+      const startName = recruit.startPoint || recruit.start || recruit.departure || '출발지 미정'
+      const destName = recruit.destPoint || recruit.dest || recruit.destination || '목적지 미정'
+      const timeInfo = recruit.time || recruit.startTime || '시간 미정'
+
+      const rideInfoPayload = {
+        driver: { name: '매칭 대기중', car: '-', plate: '-', type: '택시' },
+        route: { start: startName, dest: destName, startTime: timeInfo, endTime: '-' },
+        payment: { total: 0, mine: 0, status: '결제 대기' },
+      }
+
+      recruitStore.setRideInfo(rideInfoPayload)
+      recruitStore.setJoined(recruitIdx)
+
+      alert('성공적으로 참여했습니다!')
+      router.push(`/chat/${recruitIdx}`)
+    }
+  } catch (error) {
+    console.log("🚨 채팅방 참여 API 에러:", error)
+    alert("참여 중 서버 오류가 발생했습니다. 다시 시도해주세요.")
   }
 
-  recruitStore.setRideInfo(rideInfoPayload)
-  recruitStore.setJoined(selectedRecruit.value.id)
-  router.push('/chat')
 }
 
-// 모집 생성 제출 핸들러 (기능 로직 포함)
-const handleCreateSubmit = (formData) => {
+// 모집글 생성 함수
+const handleCreateSubmit = async (formData) => {
   if (myStatus.value !== 'IDLE') {
     alert('이미 진행 중인 모집이 있습니다.')
     return
   }
 
-  // 1. 좌표 데이터 안전하게 추출
-  const lat = formData.startLat || formData.lat || formData.y
-  const lng = formData.startLng || formData.lng || formData.x
+  // 오늘 날짜 객체 생성 후, 입력받은 시간('HH:mm') 세팅
+  const targetDate = new Date()
+  if (formData.time) {
+    const [hours, minutes] = formData.time.split(':')
+    targetDate.setHours(Number(hours), Number(minutes), 0, 0)
+  }
 
-  if (!lat || !lng) {
-    alert('출발지와 목적지의 위치 정보가 정확하지 않습니다.')
+  // 세팅한 시간이 지금 시간보다 괴거면 반환 처리
+  if (targetDate.getTime() < Date.now()) {
+    alert('출발 시간은 현재 시간 이후로 설정해주세요.')
     return
   }
 
-  // 2. 출발지/도착지 명칭 데이터 처리
-  let startName = formData.startPoint || formData.start || formData.departure || '출발지'
-  let destName = formData.destPoint || formData.dest || formData.destination || '목적지'
-
-  if (typeof startName === 'object')
-    startName = startName.name || startName.text || startName.address || '출발지'
-  if (typeof destName === 'object')
-    destName = destName.name || destName.text || destName.address || '목적지'
-
-  const newId = Date.now()
-
-  // 3. 데이터 통합
-  const newRecruitData = {
-    id: newId,
-    nickname: authStore.user?.userName || '익명 승객',
-    ...formData,
-    startLat: lat,
-    startLng: lng,
-    startPoint: startName,
-    destPoint: destName,
-    cur: 1,
-    max: formData.max || 4,
-  }
-
-  // 소켓 전송용 payload
-  const payload = {
-    type: 'createRecruit',
-    payload: newRecruitData,
+  // formData를 백엔드 Dto에 맞게 변환
+  const reqData = {
+    startPointName: formData.startPoint || formData.start,
+    startLat: formData.startLat || formData.lat || formData.y,
+    startLng: formData.startLng || formData.lng || formData.x,
+    destPointName: formData.destPoint || formData.dest,
+    destLat: formData.destLat,
+    destLng: formData.destLng,
+    departureTime: targetDate.toISOString(),
+    maxCapacity: formData.max || 4,
+    description: formData.description,
   }
 
   try {
-    if (isConnected.value) {
-      sendMessage(payload)
+    console.log('백엔드로 전송되는 모집글 데이터:', reqData)
+    const res = await api.registerRecruit(reqData)
+
+    const newRecruit = res.data.result
+
+    if (newRecruit && newRecruit.idx) {
+      recruitStore.setOwner(newRecruit.idx)
+      displayRoute.value = `${newRecruit.startPointName} → ${newRecruit.destPointName}`
+
+      if (authStore.user) {
+        authStore.user.status = 'OWNER'
+      }
     }
 
-    // UI 즉시 갱신
-    recruitList.value.unshift(newRecruitData)
-    recruitStore.setOwner(newId)
-    recruitStore.setRideInfo({
-      driver: { name: '매칭 대기중', car: '-', plate: '-', type: '택시' },
-      route: {
-        start: startName,
-        dest: destName,
-        startTime: '방금 출발',
-        endTime: '-',
-      },
-      payment: { total: 0, mine: 0, status: '정산 대기' },
-    })
-
     isCreateModalOpen.value = false
-    alert('모집이 시작되었습니다!')
-    handleSelectRecruit(newRecruitData)
+    alert("모집이 시작되었습니다!")
+  } catch (error) {
+    console.log("🚨 모집글 등록 에러 발생 : ", error)
+    alert("모집글 등록 중 오류가 발생했습니다. 다시 시도해주세요.")
+  }
+}
+
+// 모집글 나가기 함수
+const handleLeaveRecruit = async () => {
+  if (!confirm("정말 이 모집에서 나가시겠습니까?")) {
+    return
+  }
+
+  try {
+    const res = await api.leaveRecruit(selectedRecruit.value.id);
+    if (res.data.result) {
+      alert("성공적으로 방에서 나왔습니다.");
+
+      recruitStore.clear();
+      if (authStore.user) {
+        authStore.user.status = "IDLE"
+      }
+
+      displayRoute.value = '경로 미지정';
+    }
   } catch (e) {
-    // console.error('전송 실패:', e)
-    alert('전송 중 오류가 발생했습니다.')
+    alert("오류가 발생했습니다.");
+  }
+}
+
+// 모집글 등록 시 상태 동기화 함수
+const syncRecruitStatus = () => {
+  const user = authStore.user
+
+  console.log('현재 유저 상태:', user?.status)
+
+  if (!user || !user.idx) {
+    return
+  }
+
+  const myIdx = user.idx
+
+  // 전체 모집글 리스트를 순회하며 내가 어디 속해있는지 찾기
+  for (const room of recruitList.value) {
+    // 방장이면
+    if (room.ownerId === myIdx) {
+      recruitStore.setOwner(room.id)
+      displayRoute.value = `${room.start} → ${room.dest}`
+      user.status = 'OWNER'
+      return
+    }
+
+    // 참여자이면
+    const isParticipant = room.participationList?.some(p => p.userIdx === myIdx || p.useridx === myIdx)
+    if (isParticipant) {
+      recruitStore.setJoined(room.id)
+      displayRoute.value = `${room.start} → ${room.dest}`
+      user.status = 'JOINED'
+      return
+    }
   }
 }
 
@@ -270,19 +332,87 @@ const handleMoveToCurrentLocation = () => mapComponent.value?.panToCurrent()
  * 6. METHODS - DATA & NETWORK (데이터 통신 및 소켓)
  * ==============================================================================
  */
+// 타이머 변수 선언 (디바운싱용)
+let mapSearchTimeout = null
+
+// 화면 기반 모집글 검색 핸들러
+const handleSearchRecruits = (bounds) => {
+  // 디바운싱: 0.3초 안에 다시 요청이 오면 기존 요청 취소!
+  if (mapSearchTimeout) clearTimeout(mapSearchTimeout)
+
+  mapSearchTimeout = setTimeout(async () => {
+    try {
+      //  백엔드 API 호출
+      const res = await api.searchRecruits(bounds)
+      const targetData = res.data.result
+
+      console.log('📍 [화면 이동] 백엔드에서 불러온 방 목록:', targetData)
+
+      if (Array.isArray(targetData)) {
+        let mappedData = targetData.map((item) => ({
+          ...item,
+          id: item.idx,
+          start: item.startPointName,
+          dest: item.destPointName,
+          time: formatTime(item.departureTime),
+          cur: item.currentCapacity,
+          max: item.maxCapacity
+        }))
+
+        // 내 방이 화면 밖으로 나가서 잘렸을 경우를 대비해 내 방 정보는 강제 유지
+        if (myRecruitId.value) {
+          const myRoom = recruitList.value.find(r => r.id === myRecruitId.value)
+          // 새로 받아온 데이터(화면 안)에 내 방이 없다면 배열에 끼워 넣기
+          if (myRoom && !mappedData.find(r => r.id === myRoom.id)) {
+            mappedData.push(myRoom)
+          }
+        }
+
+        // 리스트 갈아끼우기 (watch 발동 -> 상태 재검사 -> 마커 다시 그림)
+        recruitList.value = mappedData.filter((item) => item.startLat && item.startLng)
+
+        console.log('✅ [프론트엔드] 화면에 그려질 최종 방 목록:', recruitList.value)
+      } else {
+        recruitList.value = []
+      }
+
+    } catch (error) {
+      console.error("지도 검색 에러:", error)
+    }
+  }, 300) // 0.3초 대기
+}
+
 // 모집 리스트 조회 (API)
 const fetchRecruits = async () => {
   isLoading.value = true
   isError.value = false
+
   try {
+    // 모집 리스트 조회 후 res에 담아줌
     const res = await api.getRecruitList()
-    if (res && Array.isArray(res.data)) {
-      recruitList.value = res.data.filter((item) => item.startLat && item.startLng)
+
+    // 응답 데이터에서 배열에 담긴 result 담기
+    const targetData = res.data.result;
+
+    if (Array.isArray(targetData)) {
+      const mappedData = targetData.map((item) => ({
+        ...item,
+        id: item.idx,
+        start: item.startPointName,
+        dest: item.destPointName,
+        time: formatTime(item.departureTime),
+        cur: item.currentCapacity,
+        max: item.maxCapacity
+      }))
+
+      recruitList.value = mappedData.filter((item) => item.startLat && item.startLng)
     } else {
-      recruitList.value = []
+      recruitList.value = [];
     }
+
+
   } catch (error) {
-    // console.log('fetchRecruits 에러 : ', error)
+    console.log('fetchRecruits 에러 : ', error)
     isError.value = true
     alert('데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.')
   } finally {
@@ -295,47 +425,101 @@ const handleSocketMessage = (event) => {
   if (!event.data) return
 
   try {
-    let data = JSON.parse(event.data)
-
-    if (data.payload && typeof data.payload === 'string') {
-      try {
-        data = JSON.parse(data.payload)
-      } catch (e) { }
-    }
-
+    const data = JSON.parse(event.data)
     if (!data || typeof data !== 'object') return
 
-    // console.log('📩 받은 메시지 : ', data)
+    // 백엔드에서 메시지가 이중 포장되어 왔을 경우 한번 벗기기
+    let realType = data.type
+    let realPayload = data.payload
 
-    // 1. 신규 모집글 등록 알림
-    if (data.type === 'newRecruit' && data.payload) {
-      // 현재 리스트에 같은 ID가 있는지 확인
-      const isExist = recruitList.value.some(item => item.id === data.payload.id)
-      // 리스트에 없을 때만 추가
+    if (data.payload && data.payload.type && data.payload.payload !== undefined) {
+      realType = data.payload.type
+      realPayload = data.payload.payload
+    }
+
+    console.log(`📩 소켓 수신 완료 (실제 처리 타입: ${realType})`)
+
+    // 신규 모집글 등록
+    if (realType === 'newRecruit' && realPayload) {
+      const item = realPayload
+      const mappedItem = {
+        ...item,
+        id: item.idx,
+        start: item.startPointName,
+        dest: item.destPointName,
+        time: formatTime(item.departureTime),
+        cur: item.currentCapacity,
+        max: item.maxCapacity
+      }
+
+      const isExist = recruitList.value.some(r => r.id === mappedItem.id)
       if (!isExist) {
-        recruitList.value.unshift(data.payload)
+        recruitList.value = [mappedItem, ...recruitList.value]
       }
     }
-    // 2. 모집글 수정 알림
-    else if (data.type === 'updateRecruit') {
-      const targetRecruit = data.payload || data.recruit
-      if (targetRecruit && targetRecruit.id) {
-        const idx = recruitList.value.findIndex((r) => r.id === targetRecruit.id)
-        if (idx !== -1) {
-          recruitList.value[idx] = targetRecruit
+
+    // 모집글 업데이트 (누군가 참여하거나 나갔을 때)
+    else if (realType === 'updateRecruit' && realPayload) {
+      const item = realPayload
+      const mappedItem = {
+        ...item,
+        id: item.idx,
+        start: item.startPointName,
+        dest: item.destPointName,
+        time: formatTime(item.departureTime),
+        cur: item.currentCapacity,
+        max: item.maxCapacity
+      }
+
+      const idx = recruitList.value.findIndex(r => r.id === mappedItem.id)
+      if (idx !== -1) {
+        recruitList.value[idx] = mappedItem
+      } else {
+        recruitList.value.unshift(mappedItem)
+      }
+
+      // 배열 참조를 완전히 갱신
+      recruitList.value = [...recruitList.value]
+    }
+
+    // 모집글 삭제 (방장이 폭파했을 때)
+    else if (realType === 'deleteRecruit' && realPayload) {
+      const deletedId = Number(realPayload)
+
+      if (myRecruitId.value === deletedId) {
+        recruitStore.clear()
+        if (authStore.user) {
+          authStore.user.status = "IDLE"
+        }
+        displayRoute.value = "경로 미지정"
+      }
+
+      // 리스트에서 해당 방 제거
+      recruitList.value = recruitList.value.filter(r => r.id !== deletedId)
+
+      // 상세 패널을 열어서 보고있는 경우 
+      if (selectedRecruit.value?.id === deletedId) {
+        isDetailOpen.value = false
+        selectedRecruit.value = null
+
+        if (myRecruitId.value !== deletedId) {
+          alert("방장에 의해 모집이 취소되었습니다.")
         }
       }
     }
-    // 기사님 위치 수신 -> 지도 업데이트
-    else if (data.type === 'driverLocation') {
-      mapComponent.value?.updateDriverMarker(data.payload)
+
+    // 기사님 위치 수신
+    else if (realType === 'driverLocation') {
+      mapComponent.value?.updateDriverMarker(realPayload)
     }
-    // 경로 데이터 수신 -> 지도에 그리기
-    else if (data.type === 'drivingPath') {
-      mapComponent.value?.drawPath(data.payload)
+
+    // 경로 데이터 수신
+    else if (realType === 'drivingPath') {
+      mapComponent.value?.drawPath(realPayload)
     }
+
   } catch (e) {
-    // console.error('🚨 이상한 데이터 수신:', event.data)
+    console.error('🚨 소켓 데이터 파싱 에러:', e)
   }
 }
 
@@ -344,29 +528,45 @@ const handleSocketMessage = (event) => {
  * 7. LIFECYCLE (생명주기 훅)
  * ==============================================================================
  */
+watch(() => recruitList.value, () => {
+  syncRecruitStatus()
+}, { deep: true })
+
 onMounted(async () => {
-  // 1. 비로그인 접근 차단
+  // 비로그인 접근 차단
   if (!authStore.user) {
     router.push('/login')
     return
   }
 
-  // 2. 소켓 연결 시작
-  const baseUrl = import.meta.env.VITE_WS_URL
-  const wsUrl = `${baseUrl}?userId=${encodeURIComponent(authStore.user.id)}`
+  // 소켓 연결 시작
+  const wsUrl = 'ws://localhost:8080/ws'
   connect(wsUrl, handleSocketMessage)
 
-  // 3. 초기 데이터 로드
+  // 초기 데이터 로드
   await fetchRecruits()
 
-  // 4. 상태 복구/검증 로직
-  if (myStatus.value !== 'IDLE' && myRecruitId.value) {
-    const targetRoom = recruitList.value.find((r) => r.id === myRecruitId.value)
-    if (!targetRoom) {
-      // (TODO: 실제로는 상태 검증 API 호출 필요)
+  // 유저의 Status 확인
+  syncRecruitStatus()
+
+  console.log("내 모집글 정보 : " + myRecruitId.value)
+
+  // 내가 참여/모집 중인 방이 있다면 그곳으로 화면 이동
+  if (myRecruitId.value) {
+    const myRoom = recruitList.value.find(r => r.id === myRecruitId.value)
+    if (myRoom) {
+      setTimeout(() => {
+        if (mapComponent.value && myRoom.startLat) {
+          mapComponent.value.moveToLocation(myRoom.startLat, myRoom.startLng)
+
+          // selectedRecruit.value = myRoom
+          // isDetailOpen.value = true
+        }
+      }, 500)
     }
   }
-  // console.log(`현재 상태: ${myStatus.value}, 방 ID: ${myRecruitId.value}`)
+
+  console.log(`현재 상태: ${myStatus.value}, 방 ID: ${myRecruitId.value}`)
 })
 </script>
 
@@ -374,7 +574,7 @@ onMounted(async () => {
   <div class="relative w-full h-full">
     <Map ref="mapComponent" :recruit-list="recruitList" :center-offset="mapCenterOffset"
       @update-location="handleLocationUpdate" @marker-click="handleSelectRecruit"
-      @update-visible-list="handleVisibleListUpdate" />
+      @update-visible-list="handleVisibleListUpdate" @bounds-changed="handleSearchRecruits" />
 
     <div class="absolute inset-0 z-10 flex p-4 pointer-events-none">
       <div class="hidden md:block w-20 shrink-0 h-full"></div>
@@ -384,7 +584,8 @@ onMounted(async () => {
           <div v-show="isListPanelOpen"
             class="pointer-events-auto h-full shadow-xl z-20 ml-4 rounded-3xl overflow-hidden">
             <RecruitListPanel :recruit-list="displayRecruitList" :is-open="true" :selected-id="selectedRecruit?.id"
-              :is-socket-connected="isConnected" @expand="isPanelOpen = true" @select="handleSelectRecruit" />
+              :is-socket-connected="isConnected" @expand="isPanelOpen = true" @select="handleSelectRecruit"
+              @search="handleKeywordSearch" />
           </div>
         </Transition>
 
@@ -425,7 +626,7 @@ onMounted(async () => {
       </Transition>
     </div>
 
-    <MapControls :nickname="authStore.user?.userName" @zoom-in="handleZoomIn" @zoom-out="handleZoomOut"
+    <MapControls :nickname="authStore.user?.nickname" @zoom-in="handleZoomIn" @zoom-out="handleZoomOut"
       @move-location="handleMoveToCurrentLocation" />
 
     <BottomActionBar :class="bottomBarClass" :route-info="displayRoute" :button-state="actionButtonState"

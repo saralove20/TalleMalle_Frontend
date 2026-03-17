@@ -18,4 +18,8 @@ const signup = async (req) => {
   return await api.post('/user/signup', req)
 }
 
-export default { login, signup }
+const extraSignup = async (req) => {
+  return await api.patch('/user/signup/extra', req)
+}
+
+export default { login, signup, extraSignup }

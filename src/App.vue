@@ -1,7 +1,6 @@
 <script setup>
 import { computed } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
-import { CarFront } from 'lucide-vue-next'
 import TheSidebar from './components/layout/Nav.vue'
 import ErrorBoundary from './components/util/ErrorBoundary.vue'
 
@@ -17,20 +16,19 @@ const goToDriverLogin = () => router.push('/driverlogin')
 
 <template>
   <!-- <ErrorBoundary> -->
-    <div class="h-screen w-screen overflow-hidden bg-slate-50 relative flex">
+  <div class="h-screen w-screen overflow-hidden bg-slate-50 relative flex">
+    <main class="flex-1 w-full h-full relative z-0">
+      <RouterView v-slot="{ Component }">
+        <component :is="Component" :key="$route.fullPath" />
+      </RouterView>
+    </main>
 
-      <main class="flex-1 w-full h-full relative z-0">
-        <RouterView v-slot="{ Component }">
-          <component :is="Component" :key="$route.fullPath" />
-        </RouterView>
-      </main>
-
-      <Transition name="slide-left">
-        <div v-if="showSidebar" class="absolute left-4 top-4 bottom-4 z-50 hidden md:block">
-          <TheSidebar />
-        </div>
-      </Transition>
-    </div>
+    <Transition name="slide-left">
+      <div v-if="showSidebar" class="absolute left-4 top-4 bottom-4 z-50 hidden md:block">
+        <TheSidebar />
+      </div>
+    </Transition>
+  </div>
   <!-- </ErrorBoundary> -->
 </template>
 

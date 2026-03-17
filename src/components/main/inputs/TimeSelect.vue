@@ -4,7 +4,7 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { ChevronDown } from 'lucide-vue-next'
+import { Clock } from 'lucide-vue-next'
 
 /**
  * ==============================================================================
@@ -31,14 +31,26 @@ const handleChange = (event) => {
 <template>
     <div class="space-y-2">
         <label class="text-xs font-bold text-slate-400">{{ label }}</label>
+
         <div class="relative">
-            <select :value="modelValue" @change="handleChange"
-                class="w-full pl-4 py-4 pr-10 bg-slate-50 rounded-2xl text-sm font-bold outline-none appearance-none border border-slate-100 focus:border-indigo-300 transition-all cursor-pointer">
-                <option value="Now">지금 바로</option>
-                <option value="10분 후">10분 후</option>
-                <option value="20분 후">20분 후</option>
-            </select>
-            <ChevronDown class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+            <Clock class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
+
+            <input type="time" :value="modelValue" @input="handleChange"
+                class="time-input relative w-full pl-11 py-4 pr-4 bg-slate-50 rounded-2xl text-sm font-bold outline-none border border-slate-100 focus:border-indigo-300 transition-all cursor-pointer" />
         </div>
     </div>
 </template>
+
+<style scoped>
+.time-input::-webkit-calendar-picker-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    color: transparent;
+    cursor: pointer;
+    z-index: 1;
+}
+</style>
