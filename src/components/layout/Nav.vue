@@ -12,9 +12,11 @@ import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
 import { useRecruitStore } from '@/stores/recruit'
+import { useChatStore } from '@/stores/chat'
 
 // APIs
 import notificationApi from '@/api/notification'
+import chatApi from '@/api/chat'
 
 // Icons
 import {
@@ -40,6 +42,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const recruitStore = useRecruitStore()
 const notificationStore = useNotificationStore()
+const chatStore = useChatStore()
 
 /**
  * ==============================================================================
@@ -47,10 +50,16 @@ const notificationStore = useNotificationStore()
  * ==============================================================================
  */
 const { notifications } = storeToRefs(notificationStore) // Store 상태 구독
+const { hasUnread } = storeToRefs(chatStore)
 
 const showNotifications = ref(false)
 const notificationRef = ref(null)
 const toggleBtnRef = ref(null)
+const swMessageHandler = (event) => {
+  if (event.data?.type === 'chat-unread') {
+    chatStore.markUnread(event.data.recruitId)
+  }
+}
 
 /**
  * ==============================================================================
@@ -160,10 +169,27 @@ onMounted(async () => {
 
   // 앱 시작 시 데이터 로드
   await loadInitialNotifications()
+
+  try {
+    const res = await chatApi.getUnreadChatRooms()
+    const unreadRooms = res?.result ?? res ?? []
+    if (Array.isArray(unreadRooms)) {
+      chatStore.setUnreadFromServer(unreadRooms)
+    }
+  } catch (error) {
+    console.error('채팅 읽지 않은 목록 로드 실패:', error)
+  }
+
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', swMessageHandler)
+  }
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.removeEventListener('message', swMessageHandler)
+  }
 })
 </script>
 
@@ -186,7 +212,7 @@ onUnmounted(() => {
         <a @click.prevent="handleChatClick" class="nav-item p-3 rounded-2xl transition-all relative cursor-pointer"
           :class="isActive('/chat') ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'">
           <MessageCircle class="w-6 h-6" />
-          <span v-if="false"
+          <span v-if="hasUnread"
             class="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
         </a>
 
