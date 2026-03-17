@@ -23,7 +23,6 @@ import DriverPage from '@/views/driver/DriverPage.vue'
 import DriverCallList from '@/views/driver/DriverCallList.vue'
 import DriverCallDetail from '@/views/driver/DriverCallDetail.vue'
 import DriverCallHistory from '@/views/driver/DriverCallHistory.vue'
-import NoticeDetail from '@/views/info/NoticeDetail.vue'
 import SafeNumberSetting from '@/views/info/SafeNumberSetting.vue'
 
 const router = createRouter({
