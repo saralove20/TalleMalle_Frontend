@@ -32,6 +32,16 @@ const updateNotice = async (noticeId, req) => {
 }
 
 /**
+ * 공지사항 삭제
+ * @param {String|Number} noticeId - 삭제할 공지사항의 고유 식별자
+ * @returns {Promise<Object>} 서버로부터의 응답 데이터
+ */
+const deleteNotice = async (noticeId) => {
+  const res = await api.delete(`/notices/${noticeId}`)
+  return res.data
+}
+
+/**
  * 공지사항 전체 목록 조회
  * @param {Object} req - 필터링이나 페이지네이션 관련 파라미터
  * @returns {Promise<Array>} 공지사항 리스트 데이터
@@ -62,4 +72,4 @@ const faqList = async (req) => {
   return res.data
 }
 
-export default { createNotice, updateNotice, noticeList, getNoticeDetail, faqList }
+export default { createNotice, updateNotice, deleteNotice, noticeList, getNoticeDetail, faqList }
