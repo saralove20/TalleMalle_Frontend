@@ -16,6 +16,22 @@ const notice = ref(null)
 const isLoading = ref(true)
 
 /**
+ * 태그별 스타일 매핑
+ */
+const tagStyles = {
+  공지: 'bg-yellow-50 text-yellow-600 border border-yellow-100',
+  업데이트: 'bg-blue-50 text-blue-600 border border-blue-100',
+  이벤트: 'bg-purple-50 text-purple-600 border border-purple-100',
+  점검: 'bg-orange-50 text-orange-600 border border-orange-100',
+  긴급: 'bg-red-50 text-red-600 border border-red-100',
+}
+
+const getTagClass = computed(() => {
+  if (!notice.value) return 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+  return tagStyles[notice.value.tag] || 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+})
+
+/**
  * 권한 체크: ADMIN 전용 버튼 노출 여부
  */
 const isAdmin = computed(() => {
@@ -87,9 +103,19 @@ onMounted(() => {
               <div class="flex items-center justify-between">
                 <div class="flex gap-2">
                   <span
-                    class="bg-indigo-50 text-indigo-600 text-[12px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider"
+                    :class="[
+                      getTagClass,
+                      'text-[12px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-sm',
+                    ]"
                   >
-                    {{ notice.tag }}
+                    {{ notice.tag || '공지' }}
+                  </span>
+
+                  <span
+                    v-if="notice.isPinned"
+                    class="bg-slate-100 text-slate-500 text-[12px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider"
+                  >
+                    필독
                   </span>
                 </div>
 
