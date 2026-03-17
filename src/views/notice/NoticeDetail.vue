@@ -1,4 +1,9 @@
 <script setup>
+/**
+ * ==============================================================================
+ * 1. IMPORTS
+ * ==============================================================================
+ */
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Calendar, Eye, Pencil, Trash2 } from 'lucide-vue-next' // 아이콘 추가
