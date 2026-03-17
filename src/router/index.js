@@ -25,6 +25,7 @@ import SafeNumberSetting from '@/views/info/SafeNumberSetting.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // 형식 맞추기 + 라우터 별 주석 달기
     { path: '/', alias: '/main', name: 'main', component: Main, meta: { requiresAuth: true } },
     {
       path: '/chat/:id?',
