@@ -5,10 +5,8 @@
  * ==============================================================================
  */
 import { ref, inject } from 'vue'
-import { useRouter } from 'vue-router'
 import { MapPin, LogOut, Wifi, WifiOff } from 'lucide-vue-next' // 아이콘
 
-import { useRecruitStore } from '@/stores/recruit'
 import ExitConfirmModal from './ExitConfirmModal.vue'
 
 /**
@@ -28,9 +26,8 @@ const props = defineProps({
   },
 })
 
-// 라우터 및 스토어 설정
-const router = useRouter()
-const recruitStore = useRecruitStore()
+// Emits 정의
+const emit = defineEmits(['exit'])
 
 // Inject (상위 컴포넌트에서 데이터 주입)
 const myUserName = inject('myUserName', '나')
@@ -55,8 +52,8 @@ const handleExitClick = () => {
 
 // 나가기 확정 핸들러 (모달 확인 버튼 클릭 시)
 const handleConfirmExit = () => {
-  recruitStore.clear()
-  router.push('/main')
+  emit('exit')
+  isExitModalOpen.value = false
 }
 </script>
 

@@ -30,7 +30,7 @@ const props = defineProps({
 })
 
 // Emits 정의 (부모에게 보낼 신호)
-const emit = defineEmits(['send-message', 'send-image', 'open-profile'])
+const emit = defineEmits(['send-message', 'send-image', 'open-profile', 'exit'])
 
 /**
  * ==============================================================================
@@ -51,6 +51,10 @@ const handleSendImage = (imageData) => {
 const handleOpenProfile = (userId) => {
   emit('open-profile', userId)
 }
+
+const handleExit = () => {
+  emit('exit')
+}
 </script>
 
 <template>
@@ -65,7 +69,7 @@ const handleOpenProfile = (userId) => {
     class="flex-1 flex flex-col glass-panel rounded-[2.5rem] overflow-hidden relative bg-white/90 backdrop-blur border border-white/50 shadow-xl"
   >
     <!-- 1. 상단 헤더 -->
-    <ChatHeader :is-connected="isConnected" :ride-info="rideInfo" />
+    <ChatHeader :is-connected="isConnected" :ride-info="rideInfo" @exit="handleExit" />
 
     <!-- 2. 메시지 리스트 (스크롤 영역) -->
     <MessageList :messages="messages" @open-profile="handleOpenProfile" />

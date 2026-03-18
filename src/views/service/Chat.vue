@@ -7,13 +7,14 @@
 import { ref, reactive, onMounted, onUnmounted, provide, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Client } from '@stomp/stompjs'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 // Stores & API
 import { useAuthStore } from '@/stores/auth'
 import { useRecruitStore } from '@/stores/recruit'
 import { useChatStore } from '@/stores/chat'
 import api from '@/api/chat'
+import mainApi from '@/api/main'
 
 // Components
 import ChatPanel from '@/components/chat/ChatPanel.vue'
@@ -31,6 +32,7 @@ const chatStore = useChatStore()
 const { user } = storeToRefs(authStore)
 const { recruitId } = storeToRefs(recruitStore)
 const route = useRoute()
+const router = useRouter()
 
 // 하위 컴포넌트(Header, MemberList)에서 내 이름을 쓸 수 있도록 전달
 const myUserName = ref('익명')
@@ -305,6 +307,26 @@ const handleOpenProfile = (userId) => {
     isBlocked: false,
   })
   isProfileModalOpen.value = true
+}
+
+const handleExitRecruit = async () => {
+  if (!roomId.value) return
+  try {
+    await mainApi.leaveRecruit(roomId.value)
+    recruitStore.clear()
+    chatStore.clearUnread(roomId.value)
+    if (stompClient) {
+      stompClient.deactivate()
+      stompClient = null
+    }
+    router.push('/chat')
+  } catch (error) {
+    messages.value.push({
+      id: Date.now() + 1,
+      type: 'system',
+      text: '⚠️ 모집 나가기에 실패했습니다.',
+    })
+  }
 }
 
 /**
@@ -595,6 +617,7 @@ onUnmounted(() => {
         @send-message="handleSendMessage"
         @send-image="handleSendImage"
         @open-profile="handleOpenProfile"
+        @exit="handleExitRecruit"
       />
 
       <RideSidebar
