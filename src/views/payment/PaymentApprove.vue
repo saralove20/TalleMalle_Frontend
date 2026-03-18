@@ -9,11 +9,11 @@ const router = useRouter()
 onMounted(async () => {
   const { customerKey, authKey } = route.query
   try {
-    const res = api.enroll(customerKey, authKey)
+    await api.enroll(customerKey, authKey)
+    await router.push('/mypage')
   } catch (err) {
     console.error('등록 실패', err)
   }
-  await router.push('/mypage')
 })
 </script>
 

@@ -55,8 +55,6 @@ const initBillingList = async () => {
 
   if (defaultBilling) billingList.push(defaultBilling)
   if (otherBillings) billingList.push(...otherBillings)
-
-  console.log(billingList)
 }
 // 결제 수단 추가 핸들러
 const handleRegisterPayment = async () => {
@@ -78,6 +76,10 @@ onMounted(() => {
 const handleManagePayment = (billing) => {
   emits('manage-payment', billing)
 }
+
+defineExpose({
+  initBillingList
+})
 </script>
 
 <template>

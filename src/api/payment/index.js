@@ -7,6 +7,7 @@ const key = async () => {
 const list = async () => {
   return await api.get('/payment/list', { withCredentials: true })
 }
+
 const enroll = async (customerKey, authKey) => {
   return await api.get('/payment/enroll', {
     params: { customerKey, authKey },
@@ -14,8 +15,13 @@ const enroll = async (customerKey, authKey) => {
   })
 }
 
+const revoke = async (billingIdx) => {
+  return await api.post(`/payment/revoke/${billingIdx}`, {}, { withCredentials: true })
+}
+
 export default {
   key,
   list,
   enroll,
+  revoke,
 }
