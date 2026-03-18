@@ -4,6 +4,7 @@ import Main from '@/views/service/Main.vue'
 import Login from '@/views/auth/Login.vue'
 import SocialLoginSuccess from '@/views/auth/SocialLoginSuccess.vue'
 import Signup from '@/views/auth/Signup.vue'
+import SignupNew from '@/views/auth/SignupNew.vue'
 import signupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
 import Chat from '@/views/service/Chat.vue'
 import MyPage from '@/views/user/MyPage.vue'
@@ -87,6 +88,7 @@ const router = createRouter({
       meta: { hideNavbar: true },
     },
     { path: '/signup', name: 'signup', component: Signup, meta: { hideNavbar: true } },
+    { path: '/signup-new', name: 'signupNew', component: SignupNew, meta: { hideNavbar: true } },
     {
       path: '/signup/extra',
       name: 'signupExtraInfo',
