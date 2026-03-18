@@ -220,7 +220,7 @@ const handleLogin = async () => {
       <p class="text-sm text-slate-500">
         아직 회원이 아니신가요?
 
-        <router-link to="/signup" class="text-indigo-600 font-bold hover:underline ml-1">
+        <router-link to="/driversignup" class="text-indigo-600 font-bold hover:underline ml-1">
           회원가입
         </router-link>
       </p>

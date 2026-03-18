@@ -24,7 +24,7 @@ defineEmits(['readItem'])
         <div class="max-w-4xl mx-auto w-full space-y-3">
 
             <transition-group name="list">
-                <NotificationItem v-for="item in items" :key="item.id" :item="item" @read="$emit('readItem', $event)" />
+                <NotificationItem v-for="item in items" :key="item.idx ?? item.id" :item="item" @read="$emit('readItem', $event)" />
             </transition-group>
 
             <div v-if="items.length === 0" class="py-20 flex flex-col items-center text-center animate-fade-in">

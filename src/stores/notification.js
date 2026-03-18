@@ -37,13 +37,13 @@ export const useNotificationStore = defineStore('notification', {
 
     // 모든 알림 읽음 처리
     markAllAsRead() {
-      this.notifications.forEach((n) => (n.read = true))
+      this.notifications.forEach((n) => (n.isRead = true))
     },
 
     // 특정 알림 읽음 처리 (API 명세에 맞춰 매개변수를 id에서 idx로 수정)
     markAsRead(idx) {
       const item = this.notifications.find((n) => n.idx === idx)
-      if (item) item.read = true
+      if (item) item.isRead = true
     },
 
     // 알림 삭제 (API 명세에 맞춰 매개변수를 id에서 idx로 수정)

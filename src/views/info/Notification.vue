@@ -60,11 +60,18 @@ const filteredList = computed(() => {
   const safeList = Array.isArray(notifications.value) ? notifications.value : []
 
   const list =
-    activeFilter.value === 'all' ? safeList : safeList.filter((n) => n.type === activeFilter.value)
+    activeFilter.value === 'all'
+      ? safeList
+      : safeList.filter((n) => {
+          // 방어 로직: n.type이 혹시 없을 경우를 대비해 처리
+          if (!n.type) return false
+          // DB의 MATCHING을 matching으로 소문자 변환 후 비교
+          return n.type.toLowerCase() === activeFilter.value
+        })
 
   return list.slice().sort((a, b) => {
-    if (a.read === b.read) return 0
-    return a.read ? 1 : -1
+    if (a.isRead === b.isRead) return 0
+    return a.isRead ? 1 : -1
   })
 })
 
@@ -83,9 +90,9 @@ const loadData = async (page = 0) => {
 
     if (res?.data?.result) {
       // 목록 데이터 저장
-      store.setNotifications(res.data.result.content || res.data.result.boardList)
+      store.setNotifications(res.data.result.content || res.data.result.boardList || [])
       // 페이징 정보 저장
-      totalPage.value = res.data.result.totalPage || 1
+      totalPage.value = res.data.result.totalPages ?? res.data.result.totalPage ?? 1
       currentPage.value = page
     }
   } catch (error) {
