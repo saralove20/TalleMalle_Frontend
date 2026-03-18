@@ -19,9 +19,17 @@ const revoke = async (billingIdx) => {
   return await api.post(`/payment/revoke/${billingIdx}`, {}, { withCredentials: true })
 }
 
+const defaultBilling = async (billingIdx) => {
+  return await api.post('/payment/default-billing', {}, {
+    params: { billingIdx },
+    withCredentials: true,
+  })
+}
+
 export default {
   key,
   list,
   enroll,
   revoke,
+  defaultBilling
 }
