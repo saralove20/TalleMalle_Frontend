@@ -49,4 +49,8 @@ export default {
     const response = await api.post('/chat/image/presign', { fileName, contentType })
     return response.data
   },
+  getChatRooms: async () => {
+    const response = await api.get('/chat/rooms')
+    return response.data
+  },
 }

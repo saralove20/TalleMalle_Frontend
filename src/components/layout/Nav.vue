@@ -66,7 +66,10 @@ const swMessageHandler = (event) => {
  * 4. METHODS - FUNCTIONAL & UI
  * ==============================================================================
  */
-const isActive = (path) => route.path === path
+const isActive = (path) => {
+  if (path === '/chat') return route.path.startsWith('/chat')
+  return route.path === path
+}
 
 const toggleNotification = () => {
   showNotifications.value = !showNotifications.value
@@ -87,10 +90,6 @@ const handleClickOutside = (event) => {
 
 // 채팅 아이콘 클릭 핸들러
 const handleChatClick = () => {
-  if (recruitStore.status === 'IDLE') {
-    alert('참여 중인 채팅방이 없습니다. 먼저 모집에 참여해주세요!')
-    return
-  }
   router.push('/chat')
 }
 
