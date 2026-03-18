@@ -30,52 +30,32 @@ const emit = defineEmits(['close', 'join'])
  */
 // --- 버튼 상태 계산 로직 (디자인 클래스 포함) ---
 const joinButtonState = computed(() => {
-    // 1. 데이터 없음
     if (!props.recruit) {
-        return {
-            text: '정보 없음',
-            disabled: true,
-            class: 'bg-slate-300 text-slate-500 cursor-not-allowed'
-        }
+        return { text: '정보 없음', disabled: true, class: 'bg-slate-300 text-slate-500 cursor-not-allowed' }
     }
 
-    // 2. [예외] 모집 인원이 꽉 찼는데, 내가 그 방 멤버가 아닐 때 -> '마감됨' 처리
-    // (단, 내가 그 방 멤버라면 '복귀' 버튼이 떠야 하므로 이 조건은 뒤로 미루거나 조정 가능.
-    // 여기서는 일단 인원 마감을 우선시하되, 내 방이면 복귀가 뜨도록 순서 배치)
-
-    // 3. 내가 이 방의 주인이나 참여자일 때 -> [복귀 가능]
+    // 내가 이 방의 주인이나 참여자일 때 -> [복귀 가능]
     if (recruitStore.recruitId === props.recruit.id) {
-        return {
-            text: '채팅방으로 복귀',
-            disabled: false,
-            class: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
-        }
+        return { text: '채팅방으로 복귀', disabled: false, class: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200' }
     }
 
-    // 4. 인원이 다 찼으면 -> [마감]
+    // 수케줄러가 기사님을 호출한 상태일 때
+    if (props.recruit.status === 'CALLING') {
+        return { text: '🚕 기사님 호출 중', disabled: true, class: 'bg-amber-500 text-white shadow-amber-200 cursor-not-allowed' }
+    }
+
+    // 인원이 다 찼을 때 (기사님 호출 전) -> [마감]
     if (props.recruit.cur >= props.recruit.max) {
-        return {
-            text: '모집이 마감되었습니다',
-            disabled: true,
-            class: 'bg-slate-300 text-slate-500 cursor-not-allowed'
-        }
+        return { text: '모집이 마감되었습니다', disabled: true, class: 'bg-slate-300 text-slate-500 cursor-not-allowed' }
     }
 
-    // 5. 내가 아무것도 안하고 있을 때 -> [입장 가능]
+    // 내가 아무것도 안하고 있을 때 -> [입장 가능]
     if (recruitStore.status === 'IDLE') {
-        return {
-            text: '동승 채팅방 입장',
-            disabled: false,
-            class: 'bg-slate-900 hover:bg-indigo-600 text-white'
-        }
+        return { text: '동승 채팅방 입장', disabled: false, class: 'bg-slate-900 hover:bg-indigo-600 text-white' }
     }
 
-    // 6. 내가 다른 방에 있을 때 -> [입장 불가]
-    return {
-        text: '다른 모집 참여 중',
-        disabled: true,
-        class: 'bg-slate-300 text-slate-500 cursor-not-allowed'
-    }
+    // 내가 다른 방에 있을 때 -> [입장 불가]
+    return { text: '다른 모집 참여 중', disabled: true, class: 'bg-slate-300 text-slate-500 cursor-not-allowed' }
 })
 </script>
 
