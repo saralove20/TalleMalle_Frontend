@@ -485,6 +485,12 @@ const handleSocketMessage = (data) => {
       delete usersData.value[userId]
       // console.log(`[ChatView] 유저 퇴장: ${userName} (${userId})`)
     }
+    messages.value.push({
+      id: Date.now() + Math.random(),
+      type: 'system',
+      text: textContent || '누군가 채팅방을 나갔습니다.',
+      time: timeStr,
+    })
     return
   }
 

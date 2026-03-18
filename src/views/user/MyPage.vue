@@ -10,7 +10,6 @@ import { useRouter } from 'vue-router'
 import { useProfileStore } from '@/stores/profile'
 import api from '@/api/profile'
 import RoundBox from '@/components/layout/RoundBox.vue'
-import RegisterPayment from '@/components/modal/RegisterPayment.vue'
 import ManagePayment from '@/components/modal/ManagePayment.vue'
 import EditProfile from '@/components/modal/EditProfile.vue'
 import HistoryEntry from '@/components/entry/HistoryEntry.vue'
@@ -116,15 +115,6 @@ const openRideDetail = (id) => {
 const openMyReview = (item) => {
   currentReview.value = item
   handleModal('review-detail')
-}
-
-// 카드 추가 핸들러
-const handleRegisterPayment = () => {
-  if (profileStore.userInfo.payment.method.length >= 2) {
-    handleModal('limit-reached')
-    return
-  }
-  handleModal('register-payment')
 }
 
 // 카드 관리 핸들러
@@ -301,7 +291,6 @@ onMounted(async () => {
             <!-- 분리된 결제 수단 컴포넌트 적용 -->
             <PaymentList
               ref="paymentListRef"
-              @register-payment="handleRegisterPayment"
               @manage-payment="handleManagePayment"
               @modal="handleModal"
             />
@@ -406,7 +395,6 @@ onMounted(async () => {
     <!-- 모달 Teleport -->
     <Teleport to="body">
       <EditProfile v-if="activeModal === 'edit-profile'" @modal="handleModal" />
-      <RegisterPayment v-if="activeModal === 'register-payment'" @modal="handleModal" />
       <ManagePayment
         v-if="activeModal === 'manage-payment' && selectedPayment"
         :selectedPayment="selectedPayment"
