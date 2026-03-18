@@ -215,6 +215,9 @@ const handleCreateSubmit = async (formData) => {
     return
   }
 
+  const tzOffset = targetDate.getTimezoneOffset() * 60000;
+  const localIsoString = new Date(targetDate.getTime() - tzOffset).toISOString().slice(0, -1);
+
   // formData를 백엔드 Dto에 맞게 변환
   const reqData = {
     startPointName: formData.startPoint || formData.start,
@@ -223,7 +226,7 @@ const handleCreateSubmit = async (formData) => {
     destPointName: formData.destPoint || formData.dest,
     destLat: formData.destLat,
     destLng: formData.destLng,
-    departureTime: targetDate.toISOString(),
+    departureTime: localIsoString,
     maxCapacity: formData.max || 4,
     description: formData.description,
   }
