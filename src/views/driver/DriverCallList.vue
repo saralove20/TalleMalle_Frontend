@@ -11,8 +11,8 @@ const myCall = ref(null)
 const isLoading = ref(false)
 const showUpdateAlert = ref(false) // 🌟 실시간 알림 상태
 
-// 웹소켓 기능 호출 (기존 정의에 따라 connect, subscribe, disconnect 사용)
-const { connect, subscribe, disconnect } = useWebSocket()
+const { connect, disconnect } = useWebSocket()
+const wsUrl = import.meta.env.VITE_WS_URL
 
 // 데이터 로드
 const fetchMyCall = async () => {
@@ -47,24 +47,16 @@ const goToDetail = (callIdx) => {
 
 onMounted(async () => {
   await initData()
-  
-  connect(() => {
-    subscribe('/topic/complete', async (message) => {
-      // 1. 서버 메시지 확인
-      if (message.body === 'NEW_CALL_ADDED' || message.body) {
-        
-        // 2. 자동 새로고침 수행
-        await initData()
-        
-        // 3. 사용자에게 갱신 사실을 알리는 토스트 표시
-        showUpdateAlert.value = true
-        
-        // 4. 3초 뒤에 알림창 자동 숨김
-        setTimeout(() => {
-          showUpdateAlert.value = false
-        }, 3000)
-      }
-    })
+
+  connect(wsUrl, async (message) => {
+    const data = JSON.parse(message.data)
+    if (data.type === 'recruitFull') {
+      await initData() // 새로고침
+      showUpdateAlert.value = true
+      setTimeout(() => {
+        showUpdateAlert.value = false
+      }, 3000)
+    }
   })
 })
 
