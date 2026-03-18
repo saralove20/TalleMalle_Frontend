@@ -68,12 +68,10 @@ const isError = ref(false)
  */
 // 하단 버튼 텍스트 및 상태 계산
 const actionButtonState = computed(() => {
-  if (myStatus.value === 'OWNER') {
-    return { text: '모집 중...', disabled: true }
-  } else if (myStatus.value === 'JOINED') {
-    return { text: '참여 중...', disabled: true }
+  if (myStatus.value === "OWNER" || myStatus.value === "JOINED") {
+    return { text: "채팅방 입장", disabled: false, isJoined: true }
   } else {
-    return { text: '모집 시작', disabled: false }
+    return { text: "모집 시작", disabled: false, isJoined: false }
   }
 })
 
@@ -102,6 +100,15 @@ const mapCenterOffset = computed(() => {
  * 5. METHODS - UI & LOGIC (기능 처리 및 이벤트 핸들러)
  * ==============================================================================
  */
+// 하단 액션바 클릭 핸들러 함수
+const handleBottomBarAction = () => {
+  if (myStatus.value === "IDLE") {
+    isCreateModalOpen.value = true
+  } else if (myRecruitId.value) {
+    router.push(`/chat/${myRecruitId.value}`)
+  }
+}
+
 // 시간 포맷팅 함수
 const formatTime = (dateString) => {
   if (!dateString) return '시간 미정'
@@ -634,7 +641,7 @@ onMounted(async () => {
       @move-location="handleMoveToCurrentLocation" />
 
     <BottomActionBar :class="bottomBarClass" :route-info="displayRoute" :button-state="actionButtonState"
-      @open-create="isCreateModalOpen = true" />
+      @action-click="handleBottomBarAction" />
 
     <CreateRecruitModal :is-open="isCreateModalOpen" @close="isCreateModalOpen = false" @submit="handleCreateSubmit" />
   </div>

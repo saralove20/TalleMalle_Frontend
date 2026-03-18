@@ -4,7 +4,7 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { Navigation2, Rocket, Loader2 } from 'lucide-vue-next'
+import { Navigation2, Rocket, MessageCircle, MessageCircleCode } from 'lucide-vue-next'
 
 /**
  * ==============================================================================
@@ -18,7 +18,7 @@ const props = defineProps({
     buttonState: {
         type: Object,
         default: () => ({
-            text: '모집 시작', disabled: false
+            text: '모집 시작', disabled: false, isJoined: false
         })
     }
 })
@@ -29,13 +29,13 @@ const props = defineProps({
  * ==============================================================================
  */
 // 모집 생성 버튼 클릭 핸들러
-const handleOpenCreate = () => {
+const handleActionClick = () => {
     if (!props.buttonState.disabled) {
-        emit('openCreate')
+        emit('actionClick')
     }
 }
 
-const emit = defineEmits(['openCreate'])
+const emit = defineEmits(['actionClick'])
 </script>
 
 <template>
@@ -45,7 +45,8 @@ const emit = defineEmits(['openCreate'])
             class="bg-white/90 backdrop-blur-md p-6 rounded-[2.5rem] flex items-center justify-between gap-12 border border-white/50 shadow-xl w-full max-w-4xl">
 
             <div class="flex-1 flex items-center gap-6 pl-4">
-                <div class="p-3 bg-slate-100 rounded-2xl text-slate-400">
+                <div :class="buttonState.isJoined ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'"
+                    class="p-3 rounded-2xl transition-colors">
                     <Navigation2 class="w-6 h-6" />
                 </div>
                 <div class="flex flex-col">
@@ -54,11 +55,11 @@ const emit = defineEmits(['openCreate'])
                 </div>
             </div>
 
-            <button @click="handleOpenCreate"
-                :class="buttonState.disabled ? 'bg-slate-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-indigo-600'"
+            <button @click="handleActionClick"
+                :class="buttonState.isJoined ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-900 hover:bg-indigo-600'"
                 class="text-white px-10 py-5 rounded-2xl font-bold flex items-center gap-3 transition-all shadow-xl whitespace-nowrap">
                 <span>{{ buttonState.text }}</span>
-                <Loader2 v-if="buttonState.disabled" class="w-5 h-5 animate-spin" />
+                <MessageCircle v-if="buttonState.isJoined" class="w-5 h-5" />
                 <Rocket v-else class="w-5 h-5" />
             </button>
 
