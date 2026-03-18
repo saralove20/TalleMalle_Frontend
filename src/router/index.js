@@ -4,7 +4,6 @@ import Main from '@/views/service/Main.vue'
 import Login from '@/views/auth/Login.vue'
 import SocialLoginSuccess from '@/views/auth/SocialLoginSuccess.vue'
 import Signup from '@/views/auth/Signup.vue'
-import SignupOldVersion from '@/views/auth/SignupOldVersion.vue'
 import signupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
 import Chat from '@/views/service/Chat.vue'
 import MyPage from '@/views/user/MyPage.vue'
@@ -13,19 +12,25 @@ import ResetPassword from '@/views/auth/ResetPassword.vue'
 import Setting from '@/views/info/Setting.vue'
 import ChangePassword from '@/views/auth/ChangePassword.vue'
 import BlockList from '@/views/info/BlockList.vue'
-import Notice from '@/views/info/Notice.vue'
+import Notice from '@/views/notice/Notice.vue'
+import NoticeDetail from '@/views/notice/NoticeDetail.vue'
+import NoticeWrite from '@/views/notice/NoticeWrite.vue'
 import Notification from '@/views/info/Notification.vue'
 import Terms from '@/views/info/Terms.vue'
 import Privacy from '@/views/info/Privacy.vue'
 import DriverLogin from '@/views/driver/DriverLogin.vue'
 import DriverSignup from '@/views/driver/DriverSignup.vue'
 import DriverPage from '@/views/driver/DriverPage.vue'
-import NoticeDetail from '@/views/info/NoticeDetail.vue'
+import DriverCallList from '@/views/driver/DriverCallList.vue'
+import DriverCallDetail from '@/views/driver/DriverCallDetail.vue'
+import DriverCallHistory from '@/views/driver/DriverCallHistory.vue'
 import SafeNumberSetting from '@/views/info/SafeNumberSetting.vue'
+import PaymentApprove from '@/views/payment/PaymentApprove.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // 형식 맞추기 + 라우터 별 주석 달기
     { path: '/', alias: '/main', name: 'main', component: Main, meta: { requiresAuth: true } },
     {
       path: '/chat/:id?',
@@ -34,6 +39,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresActiveStatus: true },
     },
     { path: '/mypage', name: 'mypage', component: MyPage, meta: { requiresAuth: true } },
+    {
+      path: '/payment/approve',
+      name: 'paymentApprove',
+      component: PaymentApprove,
+      meta: { requiresAuth: true },
+    },
     { path: '/setting', name: 'setting', component: Setting, meta: { requiresAuth: true } },
     {
       path: '/changepassword',
@@ -50,7 +61,19 @@ const router = createRouter({
     },
     { path: '/notice', name: 'notice', component: Notice, meta: { requiresAuth: true } },
     {
-      path: '/noticedetail/:num',
+      path: '/notice/write',
+      name: 'noticeWrite',
+      component: NoticeWrite,
+      meta: { requiresAuth: true, isEdit: false },
+    },
+    {
+      path: '/notice/edit/:idx',
+      name: 'noticeEdit',
+      component: NoticeWrite,
+      meta: { requiresAuth: true, isEdit: true },
+    },
+    {
+      path: '/noticedetail/:idx',
       name: 'noticedetail',
       component: NoticeDetail,
       meta: { requiresAuth: true },
@@ -108,6 +131,24 @@ const router = createRouter({
       name: 'driverpage',
       component: DriverPage,
       meta: { hideDriverNavbar: false },
+    },
+    {
+      path: '/driver/calls',
+      name: 'driverCallList',
+      component: DriverCallList,
+      meta: { hideDriverNavbar: false, requiresAuth: true },
+    },
+    {
+      path: '/driver/call/:id',
+      name: 'driverCallDetail',
+      component: DriverCallDetail,
+      meta: { hideDriverNavbar: false, requiresAuth: true },
+    },
+    {
+      path: '/driver/history',
+      name: 'driverCallHistory',
+      component: DriverCallHistory,
+      meta: { hideDriverNavbar: false, requiresAuth: true },
     },
     // 잘못된 주소로 접속하면 다른 페이지로 리다이렉트 아래 둘 중 하나 선택
     // 1. 메인으로 가게 처리

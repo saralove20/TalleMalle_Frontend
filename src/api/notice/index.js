@@ -12,12 +12,42 @@ import api from '@/plugins/axiosinterceptor'
  */
 
 /**
+ * 공지사항 작성
+ * @param {Object} req - 등록할 공지사항 데이터 (title, contents, tag, is_pinned 등)
+ * @returns {Promise<Object>} 서버 처리 결과 및 생성된 게시글 정보
+ */
+const createNotice = async (req) => {
+  const res = await api.post('/notices', req)
+  return res.data
+}
+
+/**
+ * 공지사항 수정
+ * @param {String|Number} noticeId - 공지사항 고유 식별자
+ * @param {Object} req - 수정할 공지사항 데이터 (title, contents, tag, is_pinned 등)
+ */
+const updateNotice = async (noticeId, req) => {
+  const res = await api.patch(`/notices/${noticeId}`, req)
+  return res.data
+}
+
+/**
+ * 공지사항 삭제
+ * @param {String|Number} noticeId - 삭제할 공지사항의 고유 식별자
+ * @returns {Promise<Object>} 서버로부터의 응답 데이터
+ */
+const deleteNotice = async (noticeId) => {
+  const res = await api.delete(`/notices/${noticeId}`)
+  return res.data
+}
+
+/**
  * 공지사항 전체 목록 조회
  * @param {Object} req - 필터링이나 페이지네이션 관련 파라미터
  * @returns {Promise<Array>} 공지사항 리스트 데이터
  */
 const noticeList = async (req) => {
-  const res = await api.get('/json/notice', req)
+  const res = await api.get('/notices', req)
   return res.data
 }
 
@@ -27,13 +57,9 @@ const noticeList = async (req) => {
  * @returns {Promise<Object>} 해당 ID의 공지사항 상세 객체
  */
 const getNoticeDetail = async (noticeId) => {
-  const res = await api.get('/json/notice_detail')
+  const res = await api.get('/notices/' + noticeId)
   
-  // 전체 목록 중 해당 num(ID)을 가진 데이터만 찾아서 반환
-  // JSON 구조가 { "1": {...}, "2": {...} } 형태라고 가정
-  const detailData = res.data.data[noticeId]
-  
-  return { data: detailData }
+  return res.data
 }
 
 /**
@@ -46,4 +72,4 @@ const faqList = async (req) => {
   return res.data
 }
 
-export default { noticeList, getNoticeDetail, faqList }
+export default { createNotice, updateNotice, deleteNotice, noticeList, getNoticeDetail, faqList }

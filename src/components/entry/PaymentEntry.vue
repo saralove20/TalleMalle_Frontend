@@ -17,9 +17,13 @@ import { useProfileStore } from '@/stores/profile'
 const profileStore = useProfileStore()
 
 const props = defineProps({
-  card: {
+  billing: {
     type: Object,
     required: true,
+  },
+  isDefault: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -42,25 +46,16 @@ const handleClick = () => {
     @click="handleClick"
   >
     <div class="flex items-center gap-4">
-      <div
-        class="w-10 h-7 bg-white/10 rounded flex items-center justify-center text-[8px] font-black italic uppercase"
-      >
-        {{ card.card_company?.includes('삼성') ? 'AMEX' : 'VISA' }}
-      </div>
       <div class="text-left">
         <p class="text-xs font-bold">
-          {{ card.card_company }}
-          ({{ card.card_number?.split('-').pop() }})
+          {{ billing.alias }}
         </p>
         <p class="text-[10px] text-slate-400">
-          {{ card.id === profileStore.userInfo.payment.default ? '기본 결제 수단' : '결제 수단' }}
+          {{ isDefault ? '기본 결제 수단' : '결제 수단' }}
         </p>
       </div>
     </div>
-    <CheckCircle2
-      v-if="card.id === profileStore.userInfo.payment.default"
-      class="w-5 h-5 text-indigo-400 flex-none"
-    />
+    <CheckCircle2 v-if="isDefault" class="w-5 h-5 text-indigo-400 flex-none" />
   </div>
 </template>
 

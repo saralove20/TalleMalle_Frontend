@@ -51,6 +51,7 @@ const activeModal = ref('none')
 const currentHistory = ref({})
 const currentReview = ref({})
 const selectedPayment = ref(null)
+const paymentListRef = ref(null) // 결제 수단 목록 Ref
 
 // 스크롤 상태 감지 로직용 Ref 및 상태
 const historyScrollRef = ref(null)
@@ -141,6 +142,9 @@ const handleWithdrawConfirm = () => {
 // 모달 관리 핸들러
 const handleModal = (active) => {
   activeModal.value = active
+  if (active === 'none' && paymentListRef.value) {
+    paymentListRef.value.initBillingList()
+  }
 }
 
 /**
@@ -296,6 +300,7 @@ onMounted(async () => {
           <div class="col-span-12 lg:col-span-8 space-y-6 flex flex-col min-h-0">
             <!-- 분리된 결제 수단 컴포넌트 적용 -->
             <PaymentList
+              ref="paymentListRef"
               @register-payment="handleRegisterPayment"
               @manage-payment="handleManagePayment"
               @modal="handleModal"

@@ -21,7 +21,7 @@ const props = defineProps({
     isSocketConnected: Boolean
 })
 
-const emit = defineEmits(['expand', 'select'])
+const emit = defineEmits(['expand', 'select', 'search'])
 
 /**
  * ==============================================================================
@@ -30,6 +30,16 @@ const emit = defineEmits(['expand', 'select'])
  */
 const startInput = ref('')
 const destInput = ref('')
+
+const startSearchResults = ref([]) // 출발지 검색 결과 목록
+const showDropdown = ref(false)    // 드롭다운 표시 여부
+let searchTimeout = null
+
+const destSearchResults = ref([]) // 목적지 검색 결과 목록
+const showDestDropdown = ref(false) // 목적지 드롭다운 표시 여부
+let destSearchTimeout = null // 목적지용 디바운싱 타이머
+
+let isSelecting = false
 
 /**
  * ==============================================================================
@@ -58,6 +68,137 @@ const handleExpand = () => {
 const handleSelectItem = (item) => {
     emit('select', item)
 }
+
+// 출발지 카카오 장소 검색 API 호출 (글자를 입력할 때마다 실행)
+const handleInputSearch = (e) => {
+    if (isSelecting) {
+        return
+    }
+
+    const keyword = e.target.value.trim()
+
+    if (!keyword) {
+        startSearchResults.value = []
+        showDropdown.value = false
+        return
+    }
+
+    if (searchTimeout) {
+        clearTimeout(searchTimeout)
+    }
+
+    // 타이핑할 때마다 API 호출하는 걸 방지하기 위해 0.3초 대기 (디바운싱)
+    searchTimeout = setTimeout(() => {
+        if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
+            return
+        }
+
+        const ps = new window.kakao.maps.services.Places()
+
+        ps.keywordSearch(keyword, (data, status) => {
+            if (isSelecting) {
+                return
+            }
+
+            if (status === window.kakao.maps.services.Status.OK) {
+                startSearchResults.value = data
+                showDropdown.value = true
+            } else {
+                startSearchResults.value = []
+                showDropdown.value = false
+            }
+        })
+    }, 300)
+}
+
+// 드롭다운에서 장소를 클릭했을 때 실행
+const handleSelectPlace = (place) => {
+    isSelecting = true
+
+    if (searchTimeout) {
+        clearTimeout(searchTimeout)
+    }
+
+    startInput.value = place.place_name
+    showDropdown.value = false
+
+    // 선택 즉시 지도 이동
+    emit('search', place.place_name)
+
+    setTimeout(() => {
+        isSelecting = false
+    }, 300)
+}
+
+// 목적지 카카오 장소 검색 API 호출
+const handleDestInputSearch = (e) => {
+    if (isSelecting) {
+        return
+    }
+
+    const keyword = e.target.value.trim()
+
+    if (!keyword) {
+        destSearchResults.value = []
+        showDestDropdown.value = false
+        return
+    }
+
+    if (destSearchTimeout) {
+        clearTimeout(destSearchTimeout)
+    }
+
+    destSearchTimeout = setTimeout(() => {
+        if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
+            return
+        }
+
+        const ps = new window.kakao.maps.services.Places()
+
+        ps.keywordSearch(keyword, (data, status) => {
+            if (isSelecting) {
+                return
+            }
+
+            if (status === window.kakao.maps.services.Status.OK) {
+                destSearchResults.value = data // 자르지 않고 전체 데이터 저장
+                showDestDropdown.value = true
+            } else {
+                destSearchResults.value = []
+                showDestDropdown.value = false
+            }
+        })
+    }, 300)
+}
+
+// 목적지 드롭다운에서 장소를 클릭했을 때 실행
+const handleSelectDestPlace = (place) => {
+    isSelecting = true
+
+    if (destSearchTimeout) {
+        clearTimeout(destSearchTimeout)
+    }
+
+    destInput.value = place.place_name
+    showDestDropdown.value = false
+    // 목적지는 지도 이동(emit) 없이, destInput 값만 바뀌면
+    // computed(filteredList)가 알아서 리스트를 필터링
+
+    setTimeout(() => {
+        isSelecting = false
+    }, 300)
+}
+
+// 검색 버튼용 함수
+const handleSearchSubmit = () => {
+    const keyword = startInput.value.trim()
+    if (keyword) {
+        emit('search', keyword)
+        showDropdown.value = false
+    } else {
+        alert("출발지를 입력해주세요.")
+    }
+}
 </script>
 
 <template>
@@ -73,16 +214,37 @@ const handleSelectItem = (item) => {
             </h1>
             <div class="space-y-3">
                 <div class="relative group">
-                    <MapPin class="absolute left-4 top-3.5 w-4 h-4 text-emerald-500" />
-                    <input v-model="startInput" @focus="handleExpand" type="text" placeholder="출발지"
-                        class="w-full pl-11 pr-4 py-3.5 bg-slate-50/50 rounded-2xl text-sm border border-transparent focus:bg-white focus:border-indigo-100 outline-none" />
+                    <MapPin class="absolute left-4 top-3.5 w-4 h-4 text-emerald-500 z-10" />
+                    <input v-model="startInput" @focus="handleExpand" @input="handleInputSearch"
+                        @keyup.enter="handleSearchSubmit" type="text" placeholder="출발지"
+                        class="relative z-10 w-full pl-11 pr-4 py-3.5 bg-slate-50/50 rounded-2xl text-sm border border-transparent focus:bg-white focus:border-indigo-100 outline-none" />
+
+                    <div v-if="showDropdown && startSearchResults.length > 0"
+                        class="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 max-h-[300px] overflow-y-auto custom-scroll">
+
+                        <div v-for="place in startSearchResults" :key="place.id" @click="handleSelectPlace(place)"
+                            class="px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-none transition-colors">
+                            <p class="text-sm font-bold text-slate-800">{{ place.place_name }}</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">{{ place.address_name }}</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="relative group">
-                    <Navigation class="absolute left-4 top-3.5 w-4 h-4 text-rose-500" />
-                    <input v-model="destInput" @focus="handleExpand" type="text" placeholder="목적지"
-                        class="w-full pl-11 pr-4 py-3.5 bg-slate-50/50 rounded-2xl text-sm border border-transparent focus:bg-white focus:border-indigo-100 outline-none" />
+                    <Navigation class="absolute left-4 top-3.5 w-4 h-4 text-rose-500 z-10" />
+                    <input v-model="destInput" @focus="handleExpand" @input="handleDestInputSearch" type="text"
+                        placeholder="목적지"
+                        class="relative z-10 w-full pl-11 pr-4 py-3.5 bg-slate-50/50 rounded-2xl text-sm border border-transparent focus:bg-white focus:border-indigo-100 outline-none" />
+
+                    <div v-if="showDestDropdown && destSearchResults.length > 0"
+                        class="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 max-h-[300px] overflow-y-auto custom-scroll">
+                        <div v-for="place in destSearchResults" :key="place.id" @click="handleSelectDestPlace(place)"
+                            class="px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-none transition-colors">
+                            <p class="text-sm font-bold text-slate-800">{{ place.place_name }}</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">{{ place.address_name }}</p>
+                        </div>
+                    </div>
                 </div>
-                <button
+                <button @click="handleSearchSubmit"
                     class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 mt-2">
                     <ListFilter class="w-4 h-4" />
                     조건에 맞는 모집 찾기

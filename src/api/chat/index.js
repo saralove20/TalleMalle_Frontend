@@ -10,8 +10,8 @@ import api from '@/plugins/axiosinterceptor'
  * 이전 채팅 내역 가져오기
  * @returns {Promise<Array>} 채팅 메시지 배열
  */
-const getChatHistory = async () => {
-  const response = await api.get('/json/chat')
+const getChatHistory = async (recruitId) => {
+  const response = await api.get(`/chat/${recruitId}/messages`)
   return response.data
 }
 
@@ -19,8 +19,8 @@ const getChatHistory = async () => {
  * 채팅방 참여자 목록 가져오기
  * @returns {Promise<Object>} 사용자 ID를 키로 갖는 유저 정보 객체
  */
-const getChatParticipants = async () => {
-  const response = await api.get('/json/participants')
+const getChatParticipants = async (recruitId) => {
+  const response = await api.get(`/recruits/${recruitId}/participants`)
   return response.data
 }
 
@@ -28,8 +28,8 @@ const getChatParticipants = async () => {
  * 여정 상세 정보 가져오기
  * @returns {Promise<Object>} 여정 정보 객체
  */
-const getRideDetail = async () => {
-  const response = await api.get('/json/ride_detail')
+const getRideDetail = async (recruitId) => {
+  const response = await api.get(`/recruit/${recruitId}`)
   return response.data
 }
 
@@ -37,4 +37,16 @@ export default {
   getChatHistory,
   getChatParticipants,
   getRideDetail,
+  subscribePush: async (payload) => {
+    const response = await api.post('/push/subscribe', payload)
+    return response.data
+  },
+  getUnreadChatRooms: async () => {
+    const response = await api.get('/chat/unread')
+    return response.data
+  },
+  getChatImagePresign: async (fileName, contentType) => {
+    const response = await api.post('/chat/image/presign', { fileName, contentType })
+    return response.data
+  },
 }
