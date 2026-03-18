@@ -32,7 +32,9 @@ const loadRooms = async () => {
   }
 }
 
-const openRoom = (recruitId) => {
+const openRoom = (room) => {
+  const recruitId = room.recruitIdx
+  if (!recruitId) return
   router.push(`/chat/${recruitId}`)
 }
 
@@ -78,7 +80,7 @@ onMounted(loadRooms)
                 :key="room.recruitId"
                 type="button"
                 class="text-left bg-white rounded-[2rem] border border-slate-100 p-5 shadow-sm hover:shadow-md hover:border-indigo-100 transition"
-                @click="openRoom(room.recruitId)"
+                @click="openRoom(room)"
               >
                 <div class="flex items-center justify-between gap-4">
                   <div class="min-w-0">
@@ -104,7 +106,9 @@ onMounted(loadRooms)
                 <div class="h-1 bg-slate-100 rounded-full overflow-hidden mt-2">
                   <div
                     class="h-full bg-indigo-500"
-                    :style="{ width: `${Math.min(100, (room.currentCapacity / room.maxCapacity) * 100)}%` }"
+                    :style="{
+                      width: `${Math.min(100, (room.currentCapacity / room.maxCapacity) * 100)}%`,
+                    }"
                   ></div>
                 </div>
               </button>
@@ -127,7 +131,7 @@ onMounted(loadRooms)
                 :key="room.recruitId"
                 type="button"
                 class="text-left bg-slate-50 rounded-[2rem] border border-slate-100 p-5 text-slate-600 hover:bg-slate-100 transition"
-                @click="openRoom(room.recruitId)"
+                @click="openRoom(room)"
               >
                 <div class="flex items-center justify-between gap-4">
                   <div class="min-w-0">
