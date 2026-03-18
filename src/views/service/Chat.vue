@@ -550,7 +550,7 @@ onMounted(async () => {
   // 1. 내 정보 설정
   if (user.value) {
     myUserId.value = user.value.idx || user.value.id || user.value.userId
-    myUserName.value = user.value.name || user.value.nickname || user.value.userName || '익명'
+    myUserName.value = user.value.nickname || user.value.name || user.value.userName || '익명'
     myUserImg.value = user.value.img || user.value.profileImage || user.value.userImg || ''
   } else {
     console.warn('[auth] 로그인 사용자 정보가 없습니다. localStorage USERINFO 확인 필요')
