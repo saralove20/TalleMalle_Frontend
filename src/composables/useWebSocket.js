@@ -62,6 +62,24 @@ export function useWebSocket() {
                         onMessageCallback({ data: JSON.stringify({ type: 'recruitFull', payload: message.body }) })
                     }
                 })
+
+              if (userIdx) {
+                stompClient.value.subscribe(`/topic/user/${userIdx}/notifications`, (message) => {
+                  const payload = JSON.parse(message.body)
+
+                  // PUSH_NOTIFICATION 타입인지 확인
+                  if (payload.type === 'PUSH_NOTIFICATION' && onMessageCallback) {
+                    console.log('🔔 새로운 개인 알림 도착:', payload)
+
+                    // UI 처리를 위해 컴포넌트로 데이터 전달
+                    const formattedData = {
+                      type: 'personalNotification',
+                      payload: payload,
+                    }
+                    onMessageCallback({ data: JSON.stringify(formattedData) })
+                  }
+                })
+              }
             },
             // 에러 발생 시
             onWebSocketError: (error) => {

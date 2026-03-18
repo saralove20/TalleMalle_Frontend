@@ -4,7 +4,7 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { MapPin, Navigation, ListFilter } from 'lucide-vue-next'
 // 새로 만든 컴포넌트 import
 import RecruitListItem from './RecruitListItem.vue'
@@ -108,7 +108,7 @@ const handleInputSearch = (e) => {
                 showDropdown.value = false
             }
         })
-    }, 300)
+    }, 100)
 }
 
 // 드롭다운에서 장소를 클릭했을 때 실행
@@ -199,6 +199,28 @@ const handleSearchSubmit = () => {
         alert("출발지를 입력해주세요.")
     }
 }
+
+// 외부 클릭 감지 핸들러
+const handleOutsideClick = (e) => {
+    // 출발지 드롭다운이 열려있고, 클릭한 곳이 출발지 검색 영역이 아니라면 닫기
+    if (showDropdown.value && !e.target.closest('.start-search-group')) {
+        showDropdown.value = false
+    }
+    // 목적지 드롭다운이 열려있고, 클릭한 곳이 목적지 검색 영역이 아니라면 닫기
+    if (showDestDropdown.value && !e.target.closest('.dest-search-group')) {
+        showDestDropdown.value = false
+    }
+}
+
+// 컴포넌트가 화면에 나타날 때 클릭 감지기 켜기
+onMounted(() => {
+    document.addEventListener('click', handleOutsideClick)
+})
+
+// 컴포넌트가 화면에서 사라질 때 클릭 감지기 끄기 (메모리 누수 방지)
+onUnmounted(() => {
+    document.removeEventListener('click', handleOutsideClick)
+})
 </script>
 
 <template>
@@ -213,7 +235,7 @@ const handleSearchSubmit = () => {
                 <span v-else class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full">Offline</span>
             </h1>
             <div class="space-y-3">
-                <div class="relative group">
+                <div class="relative group start-search-group">
                     <MapPin class="absolute left-4 top-3.5 w-4 h-4 text-emerald-500 z-10" />
                     <input v-model="startInput" @focus="handleExpand" @input="handleInputSearch"
                         @keyup.enter="handleSearchSubmit" type="text" placeholder="출발지"
@@ -229,7 +251,7 @@ const handleSearchSubmit = () => {
                         </div>
                     </div>
                 </div>
-                <div class="relative group">
+                <div class="relative group dest-search-group">
                     <Navigation class="absolute left-4 top-3.5 w-4 h-4 text-rose-500 z-10" />
                     <input v-model="destInput" @focus="handleExpand" @input="handleDestInputSearch" type="text"
                         placeholder="목적지"
