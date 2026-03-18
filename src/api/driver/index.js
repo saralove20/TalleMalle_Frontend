@@ -52,8 +52,16 @@ const cancelCall = async (callIdx) => {
   return await api.patch(`/call/cancel/${callIdx}`)
 }
 
+const completeCall = async (callIdx) => {
+  return await api.patch(`/call/complete/${callIdx}`)
+}
+
 const getCallHistory = async () => {
   return await api.get('/call/history')
 }
 
-export default { getCallList, getCallDetail, getMyCall, acceptCall, cancelCall, getCallHistory, login, signup }
+const getSettlement = async (callIdx) => {
+  return await api.get(`/call/settlement/${callIdx}`)
+}
+
+export default { getCallList, getCallDetail, getMyCall, acceptCall, cancelCall, completeCall, getCallHistory, getSettlement, login, signup }

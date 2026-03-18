@@ -41,12 +41,14 @@ const errorMessage = ref('')
 
 // 운행 데이터
 const currentFare = ref(4800)
-const todayIncome = ref(124000)
+const todayIncome = ref(0)
 const naviTitle = ref('운행 대기 중')
 const naviSub = ref('주변의 콜을 기다리세요')
 const etaText = ref('--분')
 const passengerName = ref('손님')
 const callInfo = ref({ departure: '', destination: '', path: [] })
+const currentCallIdx = ref(null)
+const isArrived = ref(false)
 
 // 지도 관련 비반응형 변수 (퍼포먼스 고려)
 let map = null
@@ -81,6 +83,17 @@ const initMap = () => {
 const acceptCall = () => {
   showCallModal.value = false
   showPickupSheet.value = true
+}
+
+// 운행 종료 처리
+const completeRide = async () => {
+  if (!currentCallIdx.value) return
+  try {
+    await driverApi.completeCall(currentCallIdx.value)
+    router.push(`/driver/settlement/${currentCallIdx.value}`)
+  } catch (error) {
+    showToastError('운행 종료에 실패했습니다.')
+  }
 }
 
 // 운행 시작 (네비게이션)
@@ -124,9 +137,10 @@ const runDriveSimulation = (pathData) => {
   driveInterval = setInterval(() => {
     if (index >= smoothPath.length) {
       clearInterval(driveInterval)
-      naviTitle.value = '도착'
-      naviSub.value = '운행 종료'
+      naviTitle.value = '목적지 도착'
+      naviSub.value = '운행을 종료해주세요'
       isDriving.value = false
+      isArrived.value = true
       return
     }
 
@@ -273,13 +287,26 @@ const handleSocketMessage = (e) => {
  * 6. LIFECYCLE
  * ==============================================================================
  */
-onMounted(() => {
-  // 1. 소켓 연결
+onMounted(async () => {
+  // 1. 진행 중인 콜 조회 + 오늘 수익 계산
+  try {
+    const res = await driverApi.getMyCall()
+    if (res.data?.callIdx) {
+      currentCallIdx.value = res.data.callIdx
+    }
+  } catch (_) { /* 진행 중인 콜 없음 */ }
+
+  try {
+    const historyRes = await driverApi.getCallHistory()
+    todayIncome.value = (historyRes.data || []).reduce((sum, c) => sum + (c.estimatedFare || 0), 0)
+  } catch (_) { /* 내역 없음 */ }
+
+  // 2. 소켓 연결
   const baseUrl = import.meta.env.VITE_WS_URL
   const socketUrl = `${baseUrl}`
   connect(socketUrl, handleSocketMessage)
 
-  // 2. 카카오맵 SDK 로드
+  // 3. 카카오맵 SDK 로드
   const KAKAO_KEY = import.meta.env.VITE_KAKAO_MAP_KEY
   const script = document.createElement('script')
   script.src = `//dapi.kakao.com/v2/maps/sdk.js?autoload=false&appkey=${KAKAO_KEY}&libraries=services`
@@ -309,27 +336,59 @@ onUnmounted(() => {
       <DriverMapControls :is-traffic-on="isTrafficOn" @toggle-traffic="toggleTraffic" @recenter="recenterMap" />
     </div>
 
-    <div v-if="!isDriving && !showPickupSheet"
-      class="absolute inset-x-0 bottom-0 z-20 pb-safe">
-      <div class="mx-4 mb-6 bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 flex items-center justify-around px-4 py-3">
+    <!-- 대기 중 하단 네비게이션 -->
+    <div v-if="!isDriving && !showPickupSheet && !isArrived"
+      class="absolute inset-x-0 bottom-0 z-20 flex justify-center pb-safe mb-5">
+      <div class="bg-slate-950/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 flex items-center gap-2 px-5 py-3">
+
         <button @click="router.push('/driver/calls')"
-          class="flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-400 active:scale-95 transition-all px-4 py-1">
-          <List class="w-6 h-6" />
-          <span class="text-xs font-medium">콜 목록</span>
+          class="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-400 active:scale-90 transition-all px-4 py-1">
+          <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center">
+            <List class="w-4 h-4" />
+          </div>
+          <span class="text-[10px] font-bold tracking-wide">콜 목록</span>
         </button>
 
+        <!-- 중앙 콜 버튼 -->
         <button @click="triggerCall"
-          class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-900/50 animate-pulse active:scale-95 transition-all">
-          <Radio class="w-8 h-8" />
+          class="relative flex flex-col items-center gap-1 active:scale-90 transition-all mx-3 -mt-5">
+          <div class="absolute -inset-2 rounded-full bg-indigo-500/20 animate-ping"></div>
+          <div class="relative w-14 h-14 bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 rounded-full flex items-center justify-center shadow-2xl shadow-indigo-500/50 border-4 border-slate-950/80">
+            <Radio class="w-6 h-6 text-white" />
+          </div>
+          <span class="text-[10px] font-bold text-indigo-400 tracking-wide">콜 받기</span>
         </button>
 
         <button @click="router.push('/driver/history')"
-          class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-400 active:scale-95 transition-all px-4 py-1">
-          <ClipboardList class="w-6 h-6" />
-          <span class="text-xs font-medium">운행 내역</span>
+          class="flex flex-col items-center gap-1 text-slate-500 hover:text-emerald-400 active:scale-90 transition-all px-4 py-1">
+          <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center">
+            <ClipboardList class="w-4 h-4" />
+          </div>
+          <span class="text-[10px] font-bold tracking-wide">운행 내역</span>
         </button>
       </div>
     </div>
+
+    <!-- 운행 종료 버튼 (운행 중 또는 도착 시) -->
+    <Transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-4"
+    >
+      <div v-if="isDriving || isArrived"
+        class="absolute inset-x-0 bottom-0 z-20 pb-safe px-4 mb-5">
+        <button @click="completeRide"
+          class="w-full py-4 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 active:scale-[0.98] text-white text-base font-black rounded-2xl shadow-2xl shadow-rose-500/30 transition-all flex items-center justify-center gap-2 border border-rose-500/30"
+          :class="isArrived ? 'animate-pulse' : ''"
+        >
+          <span class="text-lg">🏁</span>
+          {{ isArrived ? '도착 완료 · 운행 종료' : '운행 종료' }}
+        </button>
+      </div>
+    </Transition>
 
     <DriverPickupSheet :show="showPickupSheet" :passenger-name="passengerName"
       :location="callInfo.departure || '위치 정보 확인 중'" @start-drive="startNavigation" />
@@ -341,7 +400,7 @@ onUnmounted(() => {
 
 <style scoped>
 .kakao-dark-mode {
-  filter: invert(90%) hue-rotate(180deg) brightness(105%) contrast(95%);
+  filter: invert(92%) hue-rotate(180deg) brightness(95%) contrast(90%) saturate(80%);
 }
 
 :deep(.car-marker-container) {

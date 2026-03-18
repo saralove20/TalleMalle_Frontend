@@ -4,7 +4,7 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { Navigation2 } from 'lucide-vue-next'
+import { Navigation2, Clock, Banknote } from 'lucide-vue-next'
 
 /**
  * ==============================================================================
@@ -21,32 +21,54 @@ defineProps({
 </script>
 
 <template>
-  <header
-    class="fixed top-0 inset-x-0 bg-[#1e293b]/95 backdrop-blur-xl p-4 flex justify-between items-center shadow-2xl z-40 border-b border-white/5 transition-all duration-500 pt-safe"
-    :class="isDriving ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
-        <Navigation2 class="w-5 h-5 text-white rotate-45" />
-      </div>
-      <div>
-        <h2 class="text-lg font-black text-white leading-tight">{{ title }}</h2>
-        <div class="flex items-center gap-2 text-sm">
-          <span class="text-emerald-400 font-bold">{{ subTitle }}</span>
-          <span class="text-slate-500">|</span>
-          <span class="text-indigo-300 font-bold">{{ eta }}</span>
+  <Transition
+    enter-active-class="transition-all duration-500 ease-out"
+    enter-from-class="opacity-0 -translate-y-4"
+    enter-to-class="opacity-100 translate-y-0"
+    leave-active-class="transition-all duration-300 ease-in"
+    leave-from-class="opacity-100 translate-y-0"
+    leave-to-class="opacity-0 -translate-y-4"
+  >
+    <header
+      v-if="isDriving"
+      class="absolute top-0 inset-x-0 bg-slate-950/90 backdrop-blur-2xl border-b border-white/5 z-40 pt-safe px-5 pb-4"
+    >
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30"
+          >
+            <Navigation2 class="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 class="text-base font-black text-white leading-tight">{{ title }}</h2>
+            <p class="text-emerald-400 text-xs font-semibold mt-0.5">{{ subTitle }}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div
+            class="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5"
+          >
+            <Clock class="w-3.5 h-3.5 text-indigo-300" />
+            <span class="text-indigo-200 text-sm font-bold">{{ eta }}</span>
+          </div>
+          <div
+            class="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-1.5"
+          >
+            <Banknote class="w-3.5 h-3.5 text-amber-400" />
+            <span class="text-amber-300 text-sm font-bold font-mono">{{
+              fare?.toLocaleString()
+            }}</span>
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="text-right">
-      <div class="text-2xl font-black text-white font-mono tracking-tight">{{ fare.toLocaleString() }}</div>
-      <div class="text-[10px] text-slate-400 font-bold">EXPECTED FARE</div>
-    </div>
-  </header>
+    </header>
+  </Transition>
 </template>
 
 <style scoped>
 .pt-safe {
-  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-top: max(1.25rem, env(safe-area-inset-top));
 }
 </style>
