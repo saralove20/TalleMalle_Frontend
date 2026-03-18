@@ -21,7 +21,7 @@ import PaymentEntry from '@/components/entry/PaymentEntry.vue'
  * ==============================================================================
  */
 const profileStore = useProfileStore()
-const emits = defineEmits(['register-payment', 'manage-payment'])
+const emits = defineEmits(['manage-payment'])
 const paymentInst = shallowRef(null)
 const clientKey = 'test_ck_Gv6LjeKD8aYKA6qPb5QL8wYxAdXy'
 const billingList = reactive([])
@@ -73,8 +73,8 @@ onMounted(() => {
 })
 
 // 결제 수단 관리(수정/삭제) 핸들러
-const handleManagePayment = (billing) => {
-  emits('manage-payment', billing)
+const handleManagePayment = (billing, isDefault) => {
+  emits('manage-payment', { ...billing, isDefault })
 }
 
 defineExpose({
@@ -102,7 +102,7 @@ defineExpose({
         :key="billing.idx"
         :billing="billing"
         :is-default="index === 0"
-        @click="handleManagePayment(billing)"
+        @click="handleManagePayment(billing, index === 0)"
       />
 
       <!-- 데이터가 없을 때 -->

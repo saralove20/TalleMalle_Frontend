@@ -35,9 +35,9 @@ const handleClose = () => {
 }
 
 // 기본 결제 수단 설정 핸들러
-const setAsDefaultPayment = () => {
+const setAsDefaultPayment = async () => {
   if (props.selectedPayment) {
-    profileStore.userInfo.payment.default = props.selectedPayment.id
+    await api.defaultBilling(props.selectedPayment.idx)
     handleClose()
   }
 }
@@ -71,22 +71,24 @@ const deletePaymentMethod = async () => {
           </div>
           <h2 class="text-lg font-extrabold text-slate-900 mb-1">결제 수단 관리</h2>
           <p class="text-sm text-slate-400 font-medium">
-            {{ selectedPayment?.card_company }} ({{
-              selectedPayment?.card_number?.split('-').pop()
-            }})
+            {{ selectedPayment?.alias }}
           </p>
         </div>
 
         <!-- 관리 버튼 영역 -->
         <div class="p-4 grid grid-cols-1 gap-2" @click.stop>
           <button
-            v-if="selectedPayment?.id !== profileStore.userInfo.payment.default"
+            v-if="!selectedPayment?.isDefault"
             @click="setAsDefaultPayment"
             class="flex items-center justify-center gap-2 w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all"
           >
             <Check class="w-4 h-4" /> 기본 결제 수단으로 설정
           </button>
+          <div v-else class="flex items-center justify-center gap-2 py-4 text-indigo-600 font-bold text-sm">
+            <Check class="w-4 h-4" /> 현재 기본 결제 수단입니다
+          </div>
           <button
+            v-if="!selectedPayment?.isDefault"
             @click="deletePaymentMethod"
             class="flex items-center justify-center gap-2 w-full py-4 bg-slate-50 text-rose-500 rounded-2xl font-bold hover:bg-rose-50 transition-all"
           >
