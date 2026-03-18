@@ -6,6 +6,7 @@ import SocialLoginSuccess from '@/views/auth/SocialLoginSuccess.vue'
 import Signup from '@/views/auth/Signup.vue'
 import signupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
 import Chat from '@/views/service/Chat.vue'
+import ChatList from '@/views/service/ChatList.vue'
 import MyPage from '@/views/user/MyPage.vue'
 import FindPassword from '@/views/auth/FindPassword.vue'
 import ResetPassword from '@/views/auth/ResetPassword.vue'
@@ -32,7 +33,13 @@ const router = createRouter({
     // 형식 맞추기 + 라우터 별 주석 달기
     { path: '/', alias: '/main', name: 'main', component: Main, meta: { requiresAuth: true } },
     {
-      path: '/chat/:id?',
+      path: '/chat',
+      name: 'chatList',
+      component: ChatList,
+      meta: { requiresAuth: true, requiresActiveStatus: true },
+    },
+    {
+      path: '/chat/:id',
       name: 'chat',
       component: Chat,
       meta: { requiresAuth: true, requiresActiveStatus: true },
