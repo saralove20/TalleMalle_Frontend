@@ -26,6 +26,7 @@ import DriverCallList from '@/views/driver/DriverCallList.vue'
 import DriverCallDetail from '@/views/driver/DriverCallDetail.vue'
 import DriverCallHistory from '@/views/driver/DriverCallHistory.vue'
 import SafeNumberSetting from '@/views/info/SafeNumberSetting.vue'
+import PaymentApprove from '@/views/payment/PaymentApprove.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -45,6 +46,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresActiveStatus: true },
     },
     { path: '/mypage', name: 'mypage', component: MyPage, meta: { requiresAuth: true } },
+    {
+      path: '/payment/approve',
+      name: 'paymentApprove',
+      component: PaymentApprove,
+      meta: { requiresAuth: true },
+    },
     { path: '/setting', name: 'setting', component: Setting, meta: { requiresAuth: true } },
     {
       path: '/changepassword',
@@ -82,7 +89,8 @@ const router = createRouter({
       path: '/notification',
       name: 'notification',
       component: Notification,
-      meta: { requiresAuth: true }},
+      meta: { requiresAuth: true },
+    },
     { path: '/terms', name: 'terms', component: Terms, meta: { requiresAuth: true } },
     { path: '/privacy', name: 'privacy', component: Privacy, meta: { requiresAuth: true } },
     // hideNavbar: true 로그인 페이지에선 사이드바 숨김

@@ -6,6 +6,7 @@
  */
 import { CreditCard, Trash2, Check } from 'lucide-vue-next'
 import { useProfileStore } from '@/stores/profile'
+import api from '@/api/payment'
 
 /**
  * ==============================================================================
@@ -42,19 +43,11 @@ const setAsDefaultPayment = () => {
 }
 
 // 결제 수단 삭제 핸들러
-const deletePaymentMethod = () => {
+const deletePaymentMethod = async () => {
   if (props.selectedPayment) {
-    const list = profileStore.userInfo.payment.method
-    const index = list.findIndex((c) => c.id === props.selectedPayment.id)
-
-    if (index !== -1) {
-      list.splice(index, 1)
-      if (props.selectedPayment.id === profileStore.userInfo.payment.default) {
-        // 기본 결제 수단을 삭제한 경우, 남은 리스트의 첫 번째 항목을 기본으로 설정 (없으면 0)
-        profileStore.userInfo.payment.default = list.length > 0 ? list[0].id : 0
-      }
-    }
+    const res = await api.revoke(props.selectedPayment.idx)
     handleClose()
+    return res;
   }
 }
 </script>
