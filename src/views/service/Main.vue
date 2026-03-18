@@ -270,7 +270,8 @@ const handleLeaveRecruit = async () => {
       displayRoute.value = '경로 미지정';
     }
   } catch (e) {
-    alert("오류가 발생했습니다.");
+    const errorMessage = e.response?.data?.message || "오류가 발생했습니다.";
+    alert(errorMessage);
   }
 }
 
