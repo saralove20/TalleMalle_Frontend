@@ -270,7 +270,6 @@ const handleLeaveRecruit = async () => {
   try {
     const res = await api.leaveRecruit(selectedRecruit.value.id);
     if (res.data.result) {
-      alert("성공적으로 방에서 나왔습니다.");
 
       recruitStore.clear();
       if (authStore.user) {
@@ -622,7 +621,8 @@ onMounted(async () => {
         <div v-if="isDetailOpen" class="flex h-full items-center">
           <div class="pointer-events-auto h-full">
             <RecruitDetailPanel :recruit="selectedRecruit" :is-open="isDetailOpen" :my-status="myStatus"
-              :my-recruit-id="myRecruitId" @close="isDetailOpen = false" @join="handleJoinChat" />
+              :my-recruit-id="myRecruitId" @close="isDetailOpen = false" @join="handleJoinChat"
+              @leave="handleLeaveRecruit" />
           </div>
 
           <button @click="isDetailOpen = false"

@@ -21,7 +21,7 @@ const props = defineProps({
 })
 
 // 부모에게 보낼 신호
-const emit = defineEmits(['close', 'join'])
+const emit = defineEmits(['close', 'join', 'leave'])
 
 /**
  * ==============================================================================
@@ -91,9 +91,15 @@ const joinButtonState = computed(() => {
         </div>
 
         <div class="p-8 bg-slate-50/50 border-t border-slate-100">
+            <!-- 채팅방 입장 버튼 -->
             <button @click="!joinButtonState.disabled && emit('join')" :disabled="joinButtonState.disabled"
                 :class="joinButtonState.class" class="w-full font-bold py-5 rounded-2xl transition-all shadow-xl">
                 {{ joinButtonState.text }}
+            </button>
+            <!-- 나가기 버튼 -->
+            <button v-if="recruitStore.recruitId === recruit?.id" @click="emit('leave')"
+                class="w-full font-bold py-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors mt-5">
+                이 모집에서 나가기
             </button>
         </div>
     </div>
