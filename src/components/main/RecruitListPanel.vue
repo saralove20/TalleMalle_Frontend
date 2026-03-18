@@ -40,6 +40,8 @@ const showDestDropdown = ref(false) // 목적지 드롭다운 표시 여부
 let destSearchTimeout = null // 목적지용 디바운싱 타이머
 
 let isSelecting = false
+let lastStartKeyword = ''
+let lastDestKeyword = ''
 
 /**
  * ==============================================================================
@@ -76,6 +78,12 @@ const handleInputSearch = (e) => {
     }
 
     const keyword = e.target.value.trim()
+
+    if (keyword == lastStartKeyword) {
+        return
+    }
+
+    lastStartKeyword = keyword
 
     if (!keyword) {
         startSearchResults.value = []
@@ -137,6 +145,12 @@ const handleDestInputSearch = (e) => {
     }
 
     const keyword = e.target.value.trim()
+
+    if (keyword === lastDestKeyword) {
+        return
+    }
+
+    lastDestKeyword = keyword
 
     if (!keyword) {
         destSearchResults.value = []
