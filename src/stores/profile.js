@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
+import { useAuthStore } from './auth'
 
 export const useProfileStore = defineStore('profile', () => {
+  const authStore = useAuthStore()
+
   const userInfo = reactive({
     profile: {
       idx: null,
@@ -13,6 +16,7 @@ export const useProfileStore = defineStore('profile', () => {
       gender: '',
       rating: 0,
     },
+    // 화면 표시용 임시 변수 (LocalStorage 저장 제외)
     history: [],
     review: [],
     payment: {
@@ -21,40 +25,43 @@ export const useProfileStore = defineStore('profile', () => {
     },
   })
 
-  // 초기화: 세션 스토리지에 저장된 정보가 있다면 불러오기
-  const savedInfo = sessionStorage.getItem('UserInfo')
-  if (savedInfo) {
+  // 초기화: localStorage('USERINFO')에서 프로필 정보만 안전하게 로드
+  const savedAuth = localStorage.getItem('USERINFO')
+  if (savedAuth) {
     try {
-      const parsed = JSON.parse(savedInfo)
-      Object.assign(userInfo, parsed)
+      const parsed = JSON.parse(savedAuth)
+      userInfo.profile.idx = parsed.idx || parsed.id || null
+      userInfo.profile.nickname = parsed.nickname || ''
+      userInfo.profile.imageUrl = parsed.imageUrl || parsed.image || ''
+      userInfo.profile.introduction = parsed.introduction || ''
+      userInfo.profile.phoneNumber = parsed.phoneNumber || ''
+      userInfo.profile.birth = parsed.birth || ''
+      userInfo.profile.gender = parsed.gender || ''
     } catch (e) {
-      console.error('Failed to parse UserInfo from sessionStorage:', e)
+      console.error('Failed to parse USERINFO from localStorage:', e)
     }
   }
 
-  // 프로필 정보 로드 및 세션 스토리지 동기화
+  // 프로필 정보만 AuthStore 및 LocalStorage('USERINFO')와 동기화
+  const syncProfileToAuth = () => {
+    authStore.updateUser(userInfo.profile)
+  }
+
+  // 데이터 할당 함수들 (메모리 변수에만 값 주입)
   const loadProfile = (loadedProfile) => {
-    // 백엔드 데이터 필드를 그대로 반영
     Object.assign(userInfo.profile, loadedProfile)
-    sessionStorage.setItem('UserInfo', JSON.stringify(userInfo))
+    syncProfileToAuth()
   }
 
-  // 탑승 기록 로드 및 세션 스토리지 동기화
-  const loadHistory = (loadedHistory) => {
-    userInfo.history = loadedHistory
-    sessionStorage.setItem('UserInfo', JSON.stringify(userInfo))
-  }
+  const loadHistory = (data) => { userInfo.history = data }
+  const loadReview = (data) => { userInfo.review = data }
+  const loadPayment = (data) => { userInfo.payment = data }
 
-  // 리뷰 정보 로드 및 세션 스토리지 동기화
-  const loadReview = (loadedReview) => {
-    userInfo.review = loadedReview
-    sessionStorage.setItem('UserInfo', JSON.stringify(userInfo))
+  return { 
+    userInfo, 
+    loadProfile, 
+    loadHistory, 
+    loadReview, 
+    loadPayment 
   }
-
-  // 결제 정보 로드 및 세션 스토리지 동기화
-  const loadPayment = (loadedPayment) => {
-    userInfo.payment = loadedPayment
-    sessionStorage.setItem('UserInfo', JSON.stringify(userInfo))
-  }
-  return { userInfo, loadProfile, loadPayment, loadHistory, loadReview }
 })
