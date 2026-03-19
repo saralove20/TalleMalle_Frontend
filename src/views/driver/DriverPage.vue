@@ -6,7 +6,7 @@
  */
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Radio, List, ClipboardList } from 'lucide-vue-next'
+import { Radio, List, ClipboardList, MapPin } from 'lucide-vue-next'
 import driverApi from '@/api/driver'
 import { useWebSocket } from '@/composables/useWebSocket'
 import taxiImg from '@/assets/images/taxi.png'
@@ -48,6 +48,7 @@ const etaText = ref('--분')
 const passengerName = ref('손님')
 const callInfo = ref({ departure: '', destination: '', path: [] })
 const currentCallIdx = ref(null)
+const myCallInfo = ref(null)
 const isArrived = ref(false)
 
 // 지도 관련 비반응형 변수 (퍼포먼스 고려)
@@ -97,7 +98,16 @@ const completeRide = async () => {
 }
 
 // 운행 시작 (네비게이션)
-const startNavigation = () => {
+const startNavigation = async () => {
+  if (currentCallIdx.value) {
+    try {
+      await driverApi.startDriving(currentCallIdx.value)
+    } catch (error) {
+      showToastError('운행 시작 처리에 실패했습니다.')
+      return
+    }
+  }
+
   showPickupSheet.value = false
   isDriving.value = true
   naviTitle.value = '목적지로 이동 중'
@@ -293,6 +303,7 @@ onMounted(async () => {
     const res = await driverApi.getMyCall()
     if (res.data?.callIdx) {
       currentCallIdx.value = res.data.callIdx
+      myCallInfo.value = res.data
     }
   } catch (_) { /* 진행 중인 콜 없음 */ }
 
@@ -330,6 +341,22 @@ onUnmounted(() => {
 
     <div v-if="!isDriving" class="absolute top-6 right-4 z-20">
       <DriverIncomeWidget :income="todayIncome" />
+    </div>
+
+    <!-- 수락한 콜 카드 -->
+    <div
+      v-if="!isDriving && !showPickupSheet && !isArrived && myCallInfo"
+      class="absolute top-20 left-4 z-20 cursor-pointer active:scale-95 transition-transform"
+      @click="showPickupSheet = true"
+    >
+      <div class="bg-slate-950/75 backdrop-blur-xl border border-white/10 rounded-2xl px-3.5 py-2.5 shadow-xl max-w-[200px]">
+        <p class="text-[9px] font-bold text-violet-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse inline-block"></span>
+          수락한 콜
+        </p>
+        <p class="text-white text-xs font-bold truncate">{{ myCallInfo.startLocation }}</p>
+        <p class="text-slate-400 text-[11px] truncate mt-0.5">→ {{ myCallInfo.endLocation }}</p>
+      </div>
     </div>
 
     <div class="absolute right-4 top-28 z-20">
