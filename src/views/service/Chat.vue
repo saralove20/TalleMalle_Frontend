@@ -20,6 +20,7 @@ import mainApi from '@/api/main'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
 import RideSidebar from '@/components/chat/RideSidebar.vue'
 import ProfileModal from '@/components/chat/ProfileModal.vue'
+import ChatAccessModal from '@/components/chat/ChatAccessModal.vue'
 
 /**
  * ==============================================================================
@@ -60,6 +61,15 @@ const rideInfo = ref(null) // 여정 정보
 // UI 상태
 const isLoading = ref(false)
 const isProfileModalOpen = ref(false)
+const accessModal = reactive({
+  open: false,
+  title: '',
+  message: '',
+  confirmText: '확인',
+  onConfirm: null,
+})
+const hasShownWsError = ref(false)
+const accessBlocked = ref(false)
 
 // 프로필 모달 데이터
 const currentProfile = reactive({
@@ -75,6 +85,22 @@ const currentProfile = reactive({
   reviews: [],
   isBlocked: false,
 })
+
+const showAccessModal = (title, message, confirmText, onConfirm) => {
+  accessModal.open = true
+  accessModal.title = title
+  accessModal.message = message
+  accessModal.confirmText = confirmText
+  accessModal.onConfirm = onConfirm
+  accessBlocked.value = true
+}
+
+const handleAccessConfirm = () => {
+  if (typeof accessModal.onConfirm === 'function') {
+    accessModal.onConfirm()
+  }
+  accessModal.open = false
+}
 
 const formatTime = (date) => {
   const now = date instanceof Date ? date : new Date(date)
@@ -350,19 +376,94 @@ const fetchInitialData = async () => {
 
     if (historyResult.status === 'fulfilled') {
       const historyData = historyResult.value
+      if (historyData?.success === false) {
+        showAccessModal(
+          '채팅방 접근 불가',
+          '참여 중인 채팅방이 아니거나 접근 권한이 없습니다.',
+          '목록으로',
+          () => router.push('/chat'),
+        )
+        return
+      }
       const historyList = historyData?.result ?? historyData ?? []
       messages.value = historyList.map(normalizeHistoryMessage).filter(Boolean)
     } else {
-      messages.value = [
-        { id: 1, type: 'date', text: 'Today' },
-        { id: 2, type: 'system', text: `⚠️ 대화 내역을 불러오는데 실패했습니다.` },
-      ]
+      const status = historyResult.reason?.response?.status
+      if (status === 404) {
+        showAccessModal(
+          '채팅방을 찾을 수 없습니다',
+          '존재하지 않는 채팅방입니다.\n목록으로 이동합니다.',
+          '목록으로',
+          () => router.push('/chat'),
+        )
+        return
+      } else if (status === 401) {
+        showAccessModal(
+          '로그인이 필요합니다',
+          '채팅방 접근을 위해 로그인해 주세요.',
+          '로그인',
+          () => router.push('/login'),
+        )
+        return
+      } else {
+        showAccessModal(
+          '채팅방 접근 불가',
+          '참여 중인 채팅방이 아니거나 접근 권한이 없습니다.',
+          '목록으로',
+          () => router.push('/chat'),
+        )
+        return
+      }
+    }
+
+    if (participantsResult.status === 'rejected') {
+      const status = participantsResult.reason?.response?.status
+      if (status === 404) {
+        showAccessModal(
+          '채팅방을 찾을 수 없습니다',
+          '존재하지 않는 채팅방입니다.\n목록으로 이동합니다.',
+          '목록으로',
+          () => router.push('/chat'),
+        )
+        return
+      } else if (status === 403) {
+        showAccessModal(
+          '채팅방 접근 불가',
+          '참여 중인 채팅방이 아니거나 접근 권한이 없습니다.',
+          '목록으로',
+          () => router.push('/chat'),
+        )
+        return
+      }
+    }
+
+    if (participantsResult.status === 'fulfilled' && participantsResult.value?.success === false) {
+      showAccessModal(
+        '채팅방 접근 불가',
+        '참여 중인 채팅방이 아니거나 접근 권한이 없습니다.',
+        '목록으로',
+        () => router.push('/chat'),
+      )
+      return
     }
 
     usersData.value =
       participantsResult.status === 'fulfilled' ? normalizeParticipants(participantsResult.value) : {}
 
     const apiRideDetail = rideDetailResult.status === 'fulfilled' ? rideDetailResult.value : null
+
+    if (rideDetailResult.status === 'rejected') {
+      const status = rideDetailResult.reason?.response?.status
+      if (status === 404) {
+        showAccessModal(
+          '채팅방을 찾을 수 없습니다',
+          '존재하지 않는 채팅방입니다.\n목록으로 이동합니다.',
+          '목록으로',
+          () => router.push('/chat'),
+        )
+        return
+      }
+    }
 
     // 스토어 데이터 우선 적용, 없으면 API 데이터 사용
     rideInfo.value = storeRideInfo || mapRecruitToRideInfo(apiRideDetail) || null
@@ -390,6 +491,7 @@ const fetchInitialData = async () => {
 const connectWebSocket = () => {
   if (stompClient && stompClient.active) return
   if (!roomId.value) return
+  if (accessBlocked.value) return
 
   const wsUri = import.meta.env.VITE_WS_URL
   stompClient = new Client({
@@ -411,10 +513,34 @@ const connectWebSocket = () => {
 
   stompClient.onWebSocketClose = () => {
     isConnected.value = false
+    if (!hasShownWsError.value && !accessBlocked.value) {
+      hasShownWsError.value = true
+      showAccessModal(
+        '연결 오류',
+        '웹소켓 연결이 끊어졌습니다.\n잠시 후 다시 시도해주세요.',
+        '다시 시도',
+        () => {
+          hasShownWsError.value = false
+          connectWebSocket()
+        },
+      )
+    }
   }
 
   stompClient.onStompError = () => {
     isConnected.value = false
+    if (!hasShownWsError.value && !accessBlocked.value) {
+      hasShownWsError.value = true
+      showAccessModal(
+        '연결 오류',
+        '웹소켓 연결에 문제가 발생했습니다.\n잠시 후 다시 시도해주세요.',
+        '다시 시도',
+        () => {
+          hasShownWsError.value = false
+          connectWebSocket()
+        },
+      )
+    }
   }
 
   stompClient.activate()
@@ -559,7 +685,13 @@ onMounted(async () => {
     myUserName.value = user.value.nickname || user.value.name || user.value.userName || '익명'
     myUserImg.value = user.value.img || user.value.profileImage || user.value.userImg || ''
   } else {
-    console.warn('[auth] 로그인 사용자 정보가 없습니다. localStorage USERINFO 확인 필요')
+    showAccessModal(
+      '로그인이 필요합니다',
+      '채팅방 접근을 위해 로그인해 주세요.',
+      '로그인',
+      () => router.push('/login'),
+    )
+    return
   }
 
   // 2. 초기 데이터 로드
@@ -637,6 +769,14 @@ onUnmounted(() => {
       :is-open="isProfileModalOpen"
       :profile="currentProfile"
       @close="isProfileModalOpen = false"
+    />
+
+    <ChatAccessModal
+      :is-open="accessModal.open"
+      :title="accessModal.title"
+      :message="accessModal.message"
+      :confirm-text="accessModal.confirmText"
+      @confirm="handleAccessConfirm"
     />
   </div>
 </template>
