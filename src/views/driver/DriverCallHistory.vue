@@ -26,7 +26,7 @@ onMounted(() => fetchHistory())
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto p-4 bg-gray-50 min-h-screen pb-20">
+  <div class="max-w-2xl mx-auto p-4 bg-gray-50 h-full overflow-y-auto pb-20">
 
     <div class="flex items-center gap-3 mb-6">
       <button @click="router.back()" class="p-2 bg-white rounded-full shadow-sm text-gray-500 hover:text-gray-800 transition-colors">

@@ -19,18 +19,22 @@ defineEmits(['toggle-traffic', 'recenter'])
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
-    <button @click="$emit('toggle-traffic')"
-      class="w-12 h-12 rounded-xl backdrop-blur-md border shadow-lg flex items-center justify-center transition-all"
+  <div class="flex flex-col gap-2.5">
+    <button
+      @click="$emit('toggle-traffic')"
+      class="w-11 h-11 rounded-2xl backdrop-blur-xl border shadow-xl flex items-center justify-center transition-all active:scale-90"
       :class="isTrafficOn
-        ? 'bg-indigo-600 text-white border-indigo-500'
-        : 'bg-white/90 text-slate-600 border-white/20'
-        ">
-      <TrafficCone class="w-6 h-6" />
+        ? 'bg-indigo-600 text-white border-indigo-400/50 shadow-indigo-500/30'
+        : 'bg-slate-950/70 text-slate-300 border-white/10 hover:bg-slate-800/80'
+      "
+    >
+      <TrafficCone class="w-5 h-5" />
     </button>
-    <button @click="$emit('recenter')"
-      class="w-12 h-12 bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-white/20 flex items-center justify-center text-slate-700 active:bg-slate-100">
-      <Crosshair class="w-6 h-6" />
+    <button
+      @click="$emit('recenter')"
+      class="w-11 h-11 bg-slate-950/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 active:scale-90 transition-all"
+    >
+      <Crosshair class="w-5 h-5" />
     </button>
   </div>
 </template>

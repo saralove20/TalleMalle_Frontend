@@ -3,9 +3,10 @@ import { useRecruitStore } from '@/stores/recruit'
 import Main from '@/views/service/Main.vue'
 import Login from '@/views/auth/Login.vue'
 import SocialLoginSuccess from '@/views/auth/SocialLoginSuccess.vue'
-import SignupOldVersion2 from '@/views/auth/SignupOldVersion2.vue'
 import Signup from '@/views/auth/Signup.vue'
-import signupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
+import SignupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
+import EmailWait from '@/views/auth/EmailWait.vue'
+import EmailVerifySuccess from '@/views/auth/EmailVerifySuccess.vue'
 import Chat from '@/views/service/Chat.vue'
 import ChatList from '@/views/service/ChatList.vue'
 import MyPage from '@/views/user/MyPage.vue'
@@ -26,6 +27,7 @@ import DriverPage from '@/views/driver/DriverPage.vue'
 import DriverCallList from '@/views/driver/DriverCallList.vue'
 import DriverCallDetail from '@/views/driver/DriverCallDetail.vue'
 import DriverCallHistory from '@/views/driver/DriverCallHistory.vue'
+import DriverSettlement from '@/views/driver/DriverSettlement.vue'
 import SafeNumberSetting from '@/views/info/SafeNumberSetting.vue'
 import PaymentApprove from '@/views/payment/PaymentApprove.vue'
 
@@ -103,10 +105,17 @@ const router = createRouter({
       meta: { hideNavbar: true },
     },
     { path: '/signup', name: 'signup', component: Signup, meta: { hideNavbar: true } },
+    { path: '/email-wait', name: 'emailWait', component: EmailWait, meta: { hideNavbar: true } },
+    {
+      path: '/email/verify-success',
+      name: 'emailVerifySuccess',
+      component: EmailVerifySuccess,
+      meta: { hideNavbar: true },
+    },
     {
       path: '/signup/extra',
       name: 'signupExtraInfo',
-      component: signupExtraInfo,
+      component: SignupExtraInfo,
       meta: { hideNavbar: true },
     },
     {
@@ -157,6 +166,12 @@ const router = createRouter({
       name: 'driverCallHistory',
       component: DriverCallHistory,
       meta: { hideDriverNavbar: false, requiresAuth: true },
+    },
+    {
+      path: '/driver/settlement/:callIdx',
+      name: 'driverSettlement',
+      component: DriverSettlement,
+      meta: { hideDriverNavbar: true },
     },
     // 잘못된 주소로 접속하면 다른 페이지로 리다이렉트 아래 둘 중 하나 선택
     // 1. 메인으로 가게 처리
