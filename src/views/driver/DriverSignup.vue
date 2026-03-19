@@ -224,22 +224,32 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 font-sans"
+    class="min-h-screen flex flex-col items-center justify-center driver-signup-bg p-4 font-sans"
   >
+    <div class="w-full max-w-lg">
+      <!-- 드라이버 전용 뱃지 -->
+      <div class="flex justify-center mb-5">
+        <span
+          class="bg-violet-500/20 text-violet-400 text-xs font-bold px-4 py-1.5 rounded-full border border-violet-500/30 uppercase tracking-widest"
+        >
+          드라이버 전용
+        </span>
+      </div>
+
     <div
-      class="signup-card bg-white w-full max-w-lg rounded-3xl shadow-xl overflow-hidden relative border border-white/50"
+      class="signup-card bg-slate-800 w-full rounded-3xl shadow-2xl shadow-black/60 overflow-hidden relative border border-slate-700/60"
     >
       <div class="p-8 pb-0 flex flex-col items-center text-center">
         <div class="flex items-center gap-2 mb-6 cursor-default">
-          <div class="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-100">
+          <div class="bg-violet-600 p-2.5 rounded-2xl shadow-lg shadow-violet-500/30">
             <CarFront class="text-white w-7 h-7" />
           </div>
-          <h1 class="text-2xl font-bold tracking-tight text-indigo-900">탈래말래</h1>
+          <h1 class="text-2xl font-bold tracking-tight text-white">탈래말래</h1>
         </div>
-        <h2 class="text-xl font-bold text-slate-800">
+        <h2 class="text-xl font-bold text-white">
           {{ step === 1 ? '본인 확인' : '계정 정보 설정' }}
         </h2>
-        <p class="text-slate-500 mt-2 text-sm">
+        <p class="text-slate-400 mt-2 text-sm">
           {{
             step === 1
               ? '안전한 서비스 이용을 위해 실명을 인증해주세요.'
@@ -257,9 +267,9 @@ onUnmounted(() => {
                 v-model="form.name"
                 type="text"
                 placeholder="실명을 입력해주세요"
-                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                class="w-full px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
               />
-              <User class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
+              <User class="absolute right-4 top-3.5 w-5 h-5 text-slate-500" />
             </div>
           </div>
 
@@ -273,13 +283,13 @@ onUnmounted(() => {
                 placeholder="010-0000-0000"
                 maxlength="13"
                 :disabled="verification.isPhoneVerified"
-                class="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-slate-100"
+                class="flex-1 px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all disabled:opacity-50"
               />
               <button
                 type="button"
                 @click="requestAuth('phoneNumber')"
                 :disabled="verification.isPhoneVerified"
-                class="px-4 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition-colors whitespace-nowrap min-w-[80px] disabled:bg-emerald-500 disabled:cursor-default"
+                class="px-4 bg-violet-600 text-white text-xs font-bold rounded-xl hover:bg-violet-500 transition-colors whitespace-nowrap min-w-[80px] disabled:bg-emerald-500 disabled:text-white disabled:cursor-default"
               >
                 {{ verification.isPhoneVerified ? '인증 완료' : '인증번호' }}
               </button>
@@ -295,7 +305,7 @@ onUnmounted(() => {
                 type="text"
                 placeholder="YYYY-MM-DD"
                 maxlength="10"
-                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                class="w-full px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white text-center placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
               />
             </div>
             <div class="space-y-2">
@@ -306,8 +316,8 @@ onUnmounted(() => {
                   @click="form.gender = 'male'"
                   :class="
                     form.gender === 'male'
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-slate-50 text-slate-400 border-slate-200'
+                      ? 'bg-violet-600 text-white border-violet-600'
+                      : 'bg-slate-700 text-slate-400 border-slate-600'
                   "
                   class="flex-1 border rounded-xl font-bold transition-all text-sm"
                 >
@@ -318,8 +328,8 @@ onUnmounted(() => {
                   @click="form.gender = 'female'"
                   :class="
                     form.gender === 'female'
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-slate-50 text-slate-400 border-slate-200'
+                      ? 'bg-violet-600 text-white border-violet-600'
+                      : 'bg-slate-700 text-slate-400 border-slate-600'
                   "
                   class="flex-1 border rounded-xl font-bold transition-all text-sm"
                 >
@@ -331,7 +341,7 @@ onUnmounted(() => {
 
           <button
             @click="goToStep2"
-            class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg shadow-slate-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4"
+            class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-violet-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4"
           >
             <span>다음 단계로</span>
             <ArrowRight class="w-5 h-5" />
@@ -347,13 +357,13 @@ onUnmounted(() => {
                 type="email"
                 placeholder="example@tallemalle.com"
                 :disabled="verification.isEmailVerified"
-                class="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-slate-100"
+                class="flex-1 px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all disabled:opacity-50"
               />
               <button
                 type="button"
                 @click="requestAuth('email')"
                 :disabled="verification.isEmailVerified"
-                class="px-4 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition-colors whitespace-nowrap min-w-[80px] disabled:bg-emerald-500 disabled:cursor-default"
+                class="px-4 bg-violet-600 text-white text-xs font-bold rounded-xl hover:bg-violet-500 transition-colors whitespace-nowrap min-w-[80px] disabled:bg-emerald-500 disabled:text-white disabled:cursor-default"
               >
                 {{ verification.isEmailVerified ? '인증 완료' : '인증번호' }}
               </button>
@@ -367,12 +377,12 @@ onUnmounted(() => {
                 v-model="form.password"
                 type="password"
                 placeholder="영문, 숫자, 특수문자 포함 8자 이상"
-                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                :class="{ 'border-rose-500 bg-rose-50': errors.password }"
+                class="w-full px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
+                :class="{ 'border-rose-500': errors.password }"
               />
-              <Lock class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
+              <Lock class="absolute right-4 top-3.5 w-5 h-5 text-slate-500" />
             </div>
-            <p v-if="errors.password" class="text-xs text-rose-500 ml-1">{{ errors.password }}</p>
+            <p v-if="errors.password" class="text-xs text-rose-400 ml-1">{{ errors.password }}</p>
           </div>
 
           <div class="space-y-2">
@@ -384,12 +394,12 @@ onUnmounted(() => {
                 v-model="form.passwordConfirm"
                 type="password"
                 placeholder="비밀번호를 한 번 더 입력해주세요"
-                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                :class="{ 'border-rose-500 bg-rose-50': errors.passwordMatch }"
+                class="w-full px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
+                :class="{ 'border-rose-500': errors.passwordMatch }"
               />
-              <CheckCircle2 class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
+              <CheckCircle2 class="absolute right-4 top-3.5 w-5 h-5 text-slate-500" />
             </div>
-            <p v-if="errors.passwordMatch" class="text-xs text-rose-500 ml-1">
+            <p v-if="errors.passwordMatch" class="text-xs text-rose-400 ml-1">
               비밀번호가 일치하지 않습니다.
             </p>
           </div>
@@ -401,21 +411,20 @@ onUnmounted(() => {
                 v-model="form.nickname"
                 type=""
                 placeholder="사용할 닉네임을 입력해주세요"
-                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                :class="{ 'border-rose-500 bg-rose-50': errors.passwordMatch }"
+                class="w-full px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
               />
-              <CheckCircle2 class="absolute right-4 top-3.5 w-5 h-5 text-slate-300" />
+              <CheckCircle2 class="absolute right-4 top-3.5 w-5 h-5 text-slate-500" />
             </div>
           </div>
 
-          <div class="pt-2 space-y-3 border-t border-slate-50 mt-2 mb-6">
+          <div class="pt-2 space-y-3 border-t border-slate-700 mt-2 mb-6">
             <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 v-model="form.termCheck"
                 type="checkbox"
-                class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                class="w-5 h-5 rounded border-slate-600 text-violet-500 focus:ring-violet-500 cursor-pointer accent-violet-500"
               />
-              <span class="text-sm text-slate-600 group-hover:text-slate-900 transition-colors"
+              <span class="text-sm text-slate-400 group-hover:text-slate-200 transition-colors"
                 >이용약관 및 개인정보 처리방침 동의 (필수)</span
               >
             </label>
@@ -424,13 +433,13 @@ onUnmounted(() => {
           <div class="flex gap-3">
             <button
               @click="step = 1"
-              class="px-5 py-4 rounded-xl border border-slate-200 text-slate-500 font-bold hover:bg-slate-50"
+              class="px-5 py-4 rounded-xl border border-slate-600 text-slate-400 font-bold hover:bg-slate-700 transition-colors"
             >
               이전
             </button>
             <button
               @click="handleSignup"
-              class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              class="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-violet-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <span>가입 완료</span>
               <Check class="w-5 h-5" />
@@ -439,48 +448,49 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="p-6 bg-slate-50 text-center border-t border-slate-100">
-        <p class="text-sm text-slate-500">
+      <div class="p-6 text-center border-t border-slate-700">
+        <p class="text-sm text-slate-400">
           이미 계정이 있으신가요?
-          <router-link to="/login" class="text-indigo-600 font-bold hover:underline"
+          <router-link to="/driverlogin" class="text-violet-400 font-bold hover:underline"
             >로그인</router-link
           >
         </p>
       </div>
     </div>
+    </div>
 
     <div
       v-if="verification.isTimerRunning"
-      class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
     >
-      <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 text-center">
+      <div class="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-[2rem] shadow-2xl p-6 text-center">
         <div
-          class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4"
+          class="w-12 h-12 bg-violet-500/20 rounded-full flex items-center justify-center mx-auto mb-4"
         >
-          <Send class="w-6 h-6 text-indigo-600" />
+          <Send class="w-6 h-6 text-violet-400" />
         </div>
-        <h3 class="text-lg font-bold text-slate-900">인증번호 발송 완료</h3>
-        <p class="text-sm text-slate-500 mt-1">입력하신 정보로 인증번호가 전송되었습니다.</p>
+        <h3 class="text-lg font-bold text-white">인증번호 발송 완료</h3>
+        <p class="text-sm text-slate-400 mt-1">입력하신 정보로 인증번호가 전송되었습니다.</p>
         <div class="mt-6 mb-2">
           <input
             v-model="authCodeInput"
             type="text"
             placeholder="인증번호 6자리를 입력해주세요"
             maxlength="4"
-            class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            class="w-full px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white text-center font-bold text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-violet-500 placeholder-slate-500"
           />
         </div>
-        <div class="text-sm font-bold text-rose-500 mb-6">{{ formattedTimer }}</div>
+        <div class="text-sm font-bold text-rose-400 mb-6">{{ formattedTimer }}</div>
         <div class="flex gap-3">
           <button
             @click="verification.isTimerRunning = false"
-            class="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-500 font-bold hover:bg-slate-50"
+            class="flex-1 py-3.5 rounded-xl border border-slate-600 text-slate-400 font-bold hover:bg-slate-700 transition-colors"
           >
             취소
           </button>
           <button
             @click="confirmAuth(authCodeInput)"
-            class="flex-1 py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-lg"
+            class="flex-1 py-3.5 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-500 shadow-lg transition-colors"
           >
             인증하기
           </button>
@@ -489,3 +499,9 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.driver-signup-bg {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+</style>

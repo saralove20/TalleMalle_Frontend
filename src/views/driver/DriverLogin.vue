@@ -15,11 +15,7 @@ import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/driver'
 
-import { Mail, Lock } from 'lucide-vue-next'
-
-import AuthBaseInput from '../../components/auth/AuthBaseInput.vue'
-
-import AuthLayout from '@/components/auth/AuthLayout.vue'
+import { Mail, Lock, CarFront } from 'lucide-vue-next'
 
 import SocialLogin from '@/components/login/SocialLogin.vue'
 
@@ -154,8 +150,6 @@ const handleLogin = async () => {
   } catch (error) {
     // 실패 시 처리 (401 등 모든 에러)
 
-    // console.error('로그인 실패:', error)
-
     // 아이디/비번 불일치 또는 서버 에러 처리
 
     const message =
@@ -169,61 +163,107 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <AuthLayout no-footer-background>
-    <template #header>
-      <h2 class="text-2xl font-bold text-slate-900">파트너님! 환영합니다</h2>
-
-      <p class="text-slate-500 mt-2 text-sm">함께 탈 승객들이 기다리고 있어요.</p>
-    </template>
-
-    <form @submit.prevent="handleLogin" class="px-8 py-4 space-y-4">
-      <AuthBaseInput
-        v-model="loginForm.email"
-        type="email"
-        placeholder="이메일 주소"
-        :icon="Mail"
-        :error="loginInputError.email.errorMessage"
-        @blur="emailRules"
-      />
-
-      <div>
-        <AuthBaseInput
-          v-model="loginForm.password"
-          type="password"
-          placeholder="비밀번호"
-          :icon="Lock"
-          :error="loginInputError.password.errorMessage"
-          @blur="passwordRules"
-        />
-
-        <div class="flex justify-end mt-1">
-          <router-link
-            to="/findpassword"
-            class="text-xs text-slate-400 hover:text-indigo-600 font-medium py-1"
-          >
-            비밀번호를 잊으셨나요?
-          </router-link>
-        </div>
+  <div
+    class="min-h-screen flex items-center justify-center p-4 font-sans driver-bg"
+  >
+    <div class="w-full max-w-md">
+      <!-- 드라이버 전용 뱃지 -->
+      <div class="flex justify-center mb-5">
+        <span
+          class="bg-violet-500/20 text-violet-400 text-xs font-bold px-4 py-1.5 rounded-full border border-violet-500/30 uppercase tracking-widest"
+        >
+          드라이버 전용
+        </span>
       </div>
 
-      <button
-        type="submit"
-        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-100 transition-all mt-2 active:scale-[0.98]"
+      <div
+        class="bg-slate-800 rounded-3xl overflow-hidden border border-slate-700/60 shadow-2xl shadow-black/60"
       >
-        로그인하기
-      </button>
+        <!-- 헤더 -->
+        <div class="p-8 pb-4 flex flex-col items-center text-center">
+          <div class="flex items-center gap-2 mb-6">
+            <div class="bg-violet-600 p-2.5 rounded-2xl shadow-lg shadow-violet-500/30">
+              <CarFront class="text-slate-900 w-6 h-6" />
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">탈래말래</h1>
+          </div>
+          <h2 class="text-2xl font-bold text-white">파트너님! 환영합니다</h2>
+          <p class="text-slate-400 mt-2 text-sm">함께 탈 승객들이 기다리고 있어요.</p>
+        </div>
 
-      <SocialLogin />
-    </form>
+        <!-- 폼 -->
+        <form @submit.prevent="handleLogin" class="px-8 py-4 space-y-4">
+          <!-- 이메일 -->
+          <div class="space-y-1">
+            <div class="relative">
+              <Mail class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                v-model="loginForm.email"
+                type="email"
+                placeholder="이메일 주소"
+                class="w-full pl-12 pr-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
+                :class="{ 'border-rose-500': loginInputError.email.errorMessage }"
+                @blur="emailRules"
+              />
+            </div>
+            <p v-if="loginInputError.email.errorMessage" class="text-xs text-rose-400 ml-1">
+              {{ loginInputError.email.errorMessage }}
+            </p>
+          </div>
 
-    <template #footer>
-      <p class="text-sm text-slate-500">
-        아직 회원이 아니신가요?
+          <!-- 비밀번호 -->
+          <div class="space-y-1">
+            <div class="relative">
+              <Lock class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                v-model="loginForm.password"
+                type="password"
+                placeholder="비밀번호"
+                class="w-full pl-12 pr-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
+                :class="{ 'border-rose-500': loginInputError.password.errorMessage }"
+                @blur="passwordRules"
+              />
+            </div>
+            <p v-if="loginInputError.password.errorMessage" class="text-xs text-rose-400 ml-1">
+              {{ loginInputError.password.errorMessage }}
+            </p>
+            <div class="flex justify-end">
+              <router-link
+                to="/findpassword"
+                class="text-xs text-slate-400 hover:text-violet-400 font-medium py-1 transition-colors"
+              >
+                비밀번호를 잊으셨나요?
+              </router-link>
+            </div>
+          </div>
 
-        <router-link to="/driversignup" class="text-indigo-600 font-bold hover:underline ml-1">
-          회원가입
-        </router-link>
-      </p>
-    </template>
-  </AuthLayout>
+          <button
+            type="submit"
+            class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-violet-500/20 transition-all mt-2 active:scale-[0.98]"
+          >
+            로그인하기
+          </button>
+
+          <SocialLogin />
+        </form>
+
+        <!-- 푸터 -->
+        <div class="p-6 text-center border-t border-slate-700">
+          <p class="text-sm text-slate-400">
+            아직 파트너가 아니신가요?
+
+            <router-link to="/driversignup" class="text-violet-400 font-bold hover:underline ml-1">
+              회원가입
+            </router-link>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.driver-bg {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+</style>
