@@ -18,7 +18,7 @@ import {
   Send,
   AlertCircle,
 } from 'lucide-vue-next'
-import api from '@/api/user'
+import api from '@/api/user/index.js'
 
 /**
  * ==============================================================================

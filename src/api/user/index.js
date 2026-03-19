@@ -34,4 +34,19 @@ const nicknameDoubleCheck = async (nickname) => {
   return await api.get('/user/signup/check-nickname', { params: { nickname: nickname } })
 }
 
-export default { login, signup, extraSignup, verifyIdentity, emailDoubleCheck, nicknameDoubleCheck }
+const resendVerify = async (email) => {
+  const params = new URLSearchParams()
+  params.append('email', email) // 백엔드의 @RequestParam("email")과 일치
+
+  return await api.post('/user/resend-verify', params)
+}
+
+export default {
+  login,
+  signup,
+  extraSignup,
+  verifyIdentity,
+  emailDoubleCheck,
+  nicknameDoubleCheck,
+  resendVerify,
+}

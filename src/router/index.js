@@ -3,9 +3,10 @@ import { useRecruitStore } from '@/stores/recruit'
 import Main from '@/views/service/Main.vue'
 import Login from '@/views/auth/Login.vue'
 import SocialLoginSuccess from '@/views/auth/SocialLoginSuccess.vue'
-import SignupOldVersion2 from '@/views/auth/SignupOldVersion2.vue'
 import Signup from '@/views/auth/Signup.vue'
-import signupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
+import SignupExtraInfo from '@/views/auth/SignupExtraInfo.vue'
+import EmailWait from '@/views/auth/EmailWait.vue'
+import EmailVerifySuccess from '@/views/auth/EmailVerifySuccess.vue'
 import Chat from '@/views/service/Chat.vue'
 import ChatList from '@/views/service/ChatList.vue'
 import MyPage from '@/views/user/MyPage.vue'
@@ -104,10 +105,17 @@ const router = createRouter({
       meta: { hideNavbar: true },
     },
     { path: '/signup', name: 'signup', component: Signup, meta: { hideNavbar: true } },
+    { path: '/email-wait', name: 'emailWait', component: EmailWait, meta: { hideNavbar: true } },
+    {
+      path: '/email/verify-success',
+      name: 'emailVerifySuccess',
+      component: EmailVerifySuccess,
+      meta: { hideNavbar: true },
+    },
     {
       path: '/signup/extra',
       name: 'signupExtraInfo',
-      component: signupExtraInfo,
+      component: SignupExtraInfo,
       meta: { hideNavbar: true },
     },
     {

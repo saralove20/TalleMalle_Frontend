@@ -81,7 +81,7 @@ watch([() => form.value.password, () => form.value.passwordConfirm], ([newPw, ne
       success.value.password = ''
     } else {
       errors.value.password = ''
-      success.value.password = '사용 가능 한 비밀번호입니다.'
+      success.value.password = '사용 가능한 비밀번호입니다.'
     }
   } else {
     errors.value.password = ''
@@ -256,22 +256,17 @@ const handleSignup = async () => {
 
   try {
     await api.signup(form.value)
-    alert('회원가입이 완료되었습니다!')
-    router.push('/login')
+
+    // 가입 성공 시 리다이렉트
+    await router.push({
+      path: '/email-wait',
+      query: { email: form.value.email }, // URL 뒤에 ?email=... 가 붙어 전달됨
+    })
   } catch (error) {
     const message = error.response?.data?.message || '회원가입 실패'
     alert(message)
   }
 }
-
-onMounted(() => {
-  // 포트원 SDK 스크립트 로드 확인
-  // if (!window.IMP) {
-  //   const script = document.createElement('script')
-  //   script.src = 'https://cdn.iamport.kr/v1/iamport.js'
-  //   document.head.appendChild(script)
-  // }
-})
 </script>
 
 <template>
