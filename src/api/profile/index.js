@@ -9,10 +9,9 @@ const update = async (req) => {
   return await api.post('/profile/update', req, { withCredentials: true })
 }
 
-// Presigned URL 발급 API 추가
-const getPresignedUrl = async (fileName, contentType) => {
-  return await api.get('/profile/presigned-url', {
-    params: { fileName, contentType },
+// Presigned URL 발급 API (백엔드 명세 반영: POST /profile/image/presign)
+const getPresignedUrl = async (req) => {
+  return await api.post('/profile/image/presign', req, {
     withCredentials: true
   })
 }
@@ -32,4 +31,4 @@ const payment = async (req) => {
   return await api.get('/json/payment', req)
 }
 
-export default { profile, update, history, review, payment }
+export default { profile, update, history, review, payment, getPresignedUrl }
