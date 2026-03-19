@@ -314,7 +314,7 @@ onUnmounted(() => {
           :class="isActive('/mypage') ? 'border-indigo-600 ring-4 ring-indigo-50' : 'border-white'"
         >
           <img
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+            :src="authStore.user?.imageUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'"
             alt="profile"
             class="w-full h-full object-cover"
           />
