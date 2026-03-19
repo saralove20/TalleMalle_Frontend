@@ -57,19 +57,40 @@ const handleImageUpload = async (event) => {
   try {
     isUploading.value = true
 
-    // 2. 백엔드에 Presigned URL 요청
-    const { data: { result } } = await api.getPresignedUrl(file.name, file.type)
-    const { uploadUrl, finalUrl } = result
+    // 2. 백엔드에 Presigned URL 요청 (POST /profile/image/presign)
+    const res = await api.getPresignedUrl({
+      fileName: file.name,
+      contentType: file.type
+    })
+    
+    // 백엔드 BaseResponse 구조(res.data.result)에 따라 데이터 추출
+    const result = res.data?.result
+    if (!result || !result.uploadUrl || !result.publicUrl) {
+      throw new Error('Presigned URL 발급 실패: 응답 데이터가 올바르지 않습니다.')
+    }
+    
+    const { uploadUrl, publicUrl } = result
 
     // 3. S3/스토리지에 직접 파일 업로드 (PUT 요청)
-    // 주의: 인터셉터가 없는 순수 axios를 사용하여 업로드 (헤더 충돌 방지)
-    await axios.put(uploadUrl, file, {
-      headers: { 'Content-Type': file.type }
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type // 백엔드 서명 시 사용한 contentType과 정확히 일치해야 함
+      },
+      mode: 'cors'
     })
 
+    if (!uploadResponse.ok) {
+      // 에러 응답 본문을 읽어서 더 상세한 정보를 출력 (S3는 XML로 에러 사유를 알려줌)
+      const errorText = await uploadResponse.text()
+      console.error('S3 에러 상세:', errorText)
+      throw new Error(`S3 업로드 실패: ${uploadResponse.status} ${uploadResponse.statusText}`)
+    }
+
     // 4. 업로드 완료된 최종 URL을 로컬 상태에 저장
-    localProfile.value.imageUrl = finalUrl
-    console.log('이미지 업로드 성공:', finalUrl)
+    localProfile.value.imageUrl = publicUrl
+    console.log('이미지 업로드 성공:', publicUrl)
   } catch (error) {
     console.error('이미지 업로드 중 오류 발생:', error)
     alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
