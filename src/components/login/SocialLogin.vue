@@ -17,12 +17,12 @@ const backendUrl = import.meta.env.VITE_API_BASE_URL
 const loginWithKakao = () => {
   // 백엔드의 OAuth2 입구로 브라우저를 이동시킵니다.
   // 이 주소로 접속해야 Spring Security가 가로채서 카카오 로그인 페이지를 띄워줍니다.
-  window.location.href = `${backendUrl}oauth2/authorization/kakao`
+  window.location.href = `${backendUrl}/oauth2/authorization/kakao`
 }
 
 // 구글 로그인 실행
 const loginWithGoogle = () => {
-  window.location.href = `${backendUrl}oauth2/authorization/google`
+  window.location.href = `${backendUrl}/oauth2/authorization/google`
 }
 </script>
 
