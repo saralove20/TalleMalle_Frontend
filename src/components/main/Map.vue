@@ -350,12 +350,14 @@ onMounted(() => {
         }
 
         const resizeObserver = new ResizeObserver(() => {
-            if (mapInstance.value && mapContainer.value.clientWidth > 0) {
+            if (mapInstance.value && mapContainer.value && mapContainer.value.clientWidth > 0) {
                 mapInstance.value.relayout()
             }
         })
 
-        resizeObserver.observe(mapContainer.value)
+        if (mapContainer.value) {
+            resizeObserver.observe(mapContainer.value)
+        }
     }
 
     nextTick(() => {
