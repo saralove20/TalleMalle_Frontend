@@ -490,6 +490,12 @@ const handleSocketMessage = (event) => {
 
       // 배열 참조를 완전히 갱신
       recruitList.value = [...recruitList.value]
+
+      // 만약 지금 상세 패널에 열어놓고 보고 있는 방이 업데이트된 방이면
+      // 상세 패널의 데이터도 실시간으로 새 데이터(CALLING 상태)로 교체
+      if (selectedRecruit.value && selectedRecruit.value.id === mappedItem.id) {
+        selectedRecruit.value = mappedItem
+      }
     }
 
     // 모집글 삭제 (방장이 폭파했을 때)
@@ -513,7 +519,7 @@ const handleSocketMessage = (event) => {
         selectedRecruit.value = null
 
         if (myRecruitId.value !== deletedId) {
-          alert("방장에 의해 모집이 취소되었습니다.")
+          alert("모집이 취소되었습니다.")
         }
       }
     }
