@@ -154,17 +154,17 @@ const fetchAllUserInfo = async () => {
 
     const [profileResult, paymentResult, historyResult, reviewResult] = results
 
-    if (profileResult.status === 'fulfilled' && profileResult.value.data) {
-      profileStore.loadProfile(profileResult.value.data)
+    if (profileResult.status === 'fulfilled' && profileResult.value.data?.result) {
+      profileStore.loadProfile(profileResult.value.data.result)
     }
-    if (paymentResult.status === 'fulfilled' && paymentResult.value.data) {
-      profileStore.loadPayment(paymentResult.value.data)
+    if (paymentResult.status === 'fulfilled' && paymentResult.value.data?.result) {
+      profileStore.loadPayment(paymentResult.value.data.result)
     }
-    if (historyResult.status === 'fulfilled' && historyResult.value.data) {
-      profileStore.loadHistory(historyResult.value.data)
+    if (historyResult.status === 'fulfilled' && historyResult.value.data?.result) {
+      profileStore.loadHistory(historyResult.value.data.result)
     }
-    if (reviewResult.status === 'fulfilled' && reviewResult.value.data) {
-      profileStore.loadReview(reviewResult.value.data)
+    if (reviewResult.status === 'fulfilled' && reviewResult.value.data?.result) {
+      profileStore.loadReview(reviewResult.value.data.result)
     }
   } catch (error) {
     console.error('Critical error during fetchAllData:', error)
@@ -177,7 +177,7 @@ const fetchAllUserInfo = async () => {
  * ==============================================================================
  */
 onMounted(async () => {
-  fetchAllUserInfo()
+  await fetchAllUserInfo()
 })
 </script>
 
@@ -224,7 +224,7 @@ onMounted(async () => {
               <div class="relative w-28 h-28 mx-auto mb-4 mt-4">
                 <img
                   :src="
-                    profileStore.userInfo.profile.image ||
+                    profileStore.userInfo.profile.imageUrl ||
                     'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
                   "
                   class="w-full h-full rounded-full bg-white border-4 border-white shadow-xl object-cover"
@@ -234,7 +234,7 @@ onMounted(async () => {
                 {{ profileStore.userInfo.profile.nickname || '사용자' }}
               </h2>
               <p class="text-xs text-slate-400 mb-6 text-center tracking-tight leading-relaxed">
-                {{ profileStore.userInfo.profile.bio || '등록된 자기소개가 없습니다.' }}
+                {{ profileStore.userInfo.profile.introduction || '등록된 자기소개가 없습니다.' }}
               </p>
               <button
                 @click="handleModal('edit-profile')"
