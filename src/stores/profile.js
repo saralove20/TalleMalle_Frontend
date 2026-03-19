@@ -4,13 +4,14 @@ import { reactive } from 'vue'
 export const useProfileStore = defineStore('profile', () => {
   const userInfo = reactive({
     profile: {
-      name: '',
+      idx: null,
       nickname: '',
-      phone: '',
-      bio: '',
+      phoneNumber: '',
+      introduction: '',
+      imageUrl: '',
+      birth: '',
+      gender: '',
       rating: 0,
-      styles: ['style-1', 'style-3', 'style-5'],
-      image: '',
     },
     history: [],
     review: [],
@@ -20,9 +21,21 @@ export const useProfileStore = defineStore('profile', () => {
     },
   })
 
+  // 초기화: 세션 스토리지에 저장된 정보가 있다면 불러오기
+  const savedInfo = sessionStorage.getItem('UserInfo')
+  if (savedInfo) {
+    try {
+      const parsed = JSON.parse(savedInfo)
+      Object.assign(userInfo, parsed)
+    } catch (e) {
+      console.error('Failed to parse UserInfo from sessionStorage:', e)
+    }
+  }
+
   // 프로필 정보 로드 및 세션 스토리지 동기화
   const loadProfile = (loadedProfile) => {
-    userInfo.profile = loadedProfile
+    // 백엔드 데이터 필드를 그대로 반영
+    Object.assign(userInfo.profile, loadedProfile)
     sessionStorage.setItem('UserInfo', JSON.stringify(userInfo))
   }
 

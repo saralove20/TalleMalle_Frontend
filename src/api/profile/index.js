@@ -1,8 +1,20 @@
 import api from '@/plugins/axiosinterceptor'
 
 // 프로필 정보 조회 API
-const profile = async (req) => {
-  return await api.get('/json/profile', req)
+const profile = async () => {
+  return await api.get('/profile/read', { withCredentials: true })
+}
+
+const update = async (req) => {
+  return await api.post('/profile/update', req, { withCredentials: true })
+}
+
+// Presigned URL 발급 API 추가
+const getPresignedUrl = async (fileName, contentType) => {
+  return await api.get('/profile/presigned-url', {
+    params: { fileName, contentType },
+    withCredentials: true
+  })
 }
 
 // 탑승 기록 조회 API
@@ -20,4 +32,4 @@ const payment = async (req) => {
   return await api.get('/json/payment', req)
 }
 
-export default { profile, history, review, payment }
+export default { profile, update, history, review, payment }
