@@ -27,7 +27,7 @@ export function useWebSocket() {
      * ==============================================================================
      */
     // 소켓 연결 함수
-    const connect = (brokerUrl, onMessageCallback) => {
+    const connect = (brokerUrl, onMessageCallback, userIdx) => {
         // 이미 연결되어 있다면 패스
         if (stompClient.value && stompClient.value.connected) {
             return
@@ -63,23 +63,23 @@ export function useWebSocket() {
                     }
                 })
 
-              if (userIdx) {
-                stompClient.value.subscribe(`/topic/user/${userIdx}/notifications`, (message) => {
-                  const payload = JSON.parse(message.body)
+                if (userIdx) {
+                    stompClient.value.subscribe(`/topic/user/${userIdx}/notifications`, (message) => {
+                        const payload = JSON.parse(message.body)
 
-                  // PUSH_NOTIFICATION 타입인지 확인
-                  if (payload.type === 'PUSH_NOTIFICATION' && onMessageCallback) {
-                    console.log('🔔 새로운 개인 알림 도착:', payload)
+                        // PUSH_NOTIFICATION 타입인지 확인
+                        if (payload.type === 'PUSH_NOTIFICATION' && onMessageCallback) {
+                            console.log('🔔 새로운 개인 알림 도착:', payload)
 
-                    // UI 처리를 위해 컴포넌트로 데이터 전달
-                    const formattedData = {
-                      type: 'personalNotification',
-                      payload: payload,
-                    }
-                    onMessageCallback({ data: JSON.stringify(formattedData) })
-                  }
-                })
-              }
+                            // UI 처리를 위해 컴포넌트로 데이터 전달
+                            const formattedData = {
+                                type: 'personalNotification',
+                                payload: payload,
+                            }
+                            onMessageCallback({ data: JSON.stringify(formattedData) })
+                        }
+                    })
+                }
             },
             // 에러 발생 시
             onWebSocketError: (error) => {

@@ -556,8 +556,9 @@ onMounted(async () => {
   }
 
   // 소켓 연결 시작
-  const wsUrl = 'ws://localhost:8080/ws'
-  connect(wsUrl, handleSocketMessage)
+  const wsUrl = import.meta.env.VITE_WS_URL
+  const myUseridx = authStore.user?.idx
+  connect(wsUrl, handleSocketMessage, myUseridx)
 
   // 초기 데이터 로드
   await fetchRecruits()
