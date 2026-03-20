@@ -11,7 +11,9 @@ import api from '@/plugins/axiosinterceptor'
  * ==============================================================================
  */
 const login = async (req) => {
-  return await api.post('/user/login', req)
+  return await api.post('/user/login', req, {
+    withCredentials: true
+  })
 }
 
 const signup = async (req) => {
