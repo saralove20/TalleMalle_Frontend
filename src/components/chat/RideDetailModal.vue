@@ -131,19 +131,6 @@ const handleClose = () => {
                 </div>
               </div>
 
-              <!-- 현재 위치 -->
-              <div class="relative flex gap-4">
-                <div
-                  class="w-5 h-5 rounded-full bg-indigo-600 z-10 shrink-0 flex items-center justify-center shadow-lg shadow-indigo-300"
-                >
-                  <Car class="w-3 h-3 text-white" />
-                </div>
-                <div>
-                  <p class="text-xs font-bold text-indigo-600 animate-pulse">현재 이동 중</p>
-                  <p class="text-sm font-bold text-slate-900">뱅뱅사거리 부근</p>
-                </div>
-              </div>
-
               <!-- 도착지 -->
               <div class="relative flex gap-4">
                 <div
