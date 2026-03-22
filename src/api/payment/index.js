@@ -4,26 +4,30 @@ const key = async () => {
   return await api.get('/payment/key', { withCredentials: true })
 }
 
-const list = async () => {
-  return await api.get('/payment/list', { withCredentials: true })
+const defaultBilling = async (billingIdx) => {
+  return await api.patch(
+    '/payment/default-billing',
+    {},
+    {
+      params: { billingIdx },
+      withCredentials: true,
+    },
+  )
 }
 
 const enroll = async (customerKey, authKey) => {
   return await api.get('/payment/enroll', {
     params: { customerKey, authKey },
-    withCredentials: true
+    withCredentials: true,
   })
 }
 
 const revoke = async (billingIdx) => {
-  return await api.post(`/payment/revoke/${billingIdx}`, {}, { withCredentials: true })
+  return await api.delete(`/payment/billing/${billingIdx}`,{ withCredentials: true })
 }
 
-const defaultBilling = async (billingIdx) => {
-  return await api.post('/payment/default-billing', {}, {
-    params: { billingIdx },
-    withCredentials: true,
-  })
+const list = async () => {
+  return await api.get('/payment/billing', { withCredentials: true })
 }
 
 export default {
