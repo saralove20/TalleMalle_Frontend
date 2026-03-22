@@ -17,6 +17,7 @@ import { useChatStore } from '@/stores/chat'
 // APIs
 import notificationApi from '@/api/notification'
 import chatApi from '@/api/chat'
+import userApi from '@/api/user'
 
 // Icons
 import {
@@ -189,7 +190,15 @@ const loadInitialNotifications = async () => {
  * 5. METHODS - API & NETWORK
  * ==============================================================================
  */
-
+const logout = async () => {
+  try {
+    const res = await userApi.logout()
+    console.log(res.data)
+    authStore.logout()
+  } catch (error) {
+    console.error(error)
+  }
+}
 
 /**
  * ==============================================================================
@@ -321,7 +330,7 @@ onUnmounted(() => {
         </RouterLink>
 
         <button
-          @click="authStore.logout()"
+          @click="logout"
           class="nav-item p-3 rounded-2xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all mt-2"
         >
           <LogOut class="w-6 h-6" />

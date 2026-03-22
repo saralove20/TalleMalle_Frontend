@@ -193,13 +193,12 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const recruitStore = useRecruitStore()
   const user = localStorage.getItem('USERINFO')
-  const hasToken = document.cookie.includes('ATOKEN')
   const myStatus = localStorage.getItem('myStatus')
 
-  console.log('체크 결과 - 유저정보:', !!user, '토큰존재:', hasToken)
+  console.log('체크 결과 - 유저정보:', !!user)
 
   // 로그인 체크 (requiresAuth)
-  if (to.meta.requiresAuth && !user && !hasToken) {
+  if (to.meta.requiresAuth && !user) {
     alert('로그인이 필요한 서비스입니다.')
     next('/login')
   } else {

@@ -16,6 +16,10 @@ const login = async (req) => {
   })
 }
 
+const logout = async (req) => {
+  return await api.post('/user/logout', req)
+}
+
 const signup = async (req) => {
   return await api.post('/user/signup', req)
 }
@@ -45,6 +49,7 @@ const resendVerify = async (email) => {
 
 export default {
   login,
+  logout,
   signup,
   extraSignup,
   verifyIdentity,
