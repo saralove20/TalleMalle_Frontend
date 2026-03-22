@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { MapPin, Navigation, RefreshCw, Car } from 'lucide-vue-next'
+import { MapPin, Navigation, RefreshCw, Car, ArrowLeft } from 'lucide-vue-next'
 import driverApi from '@/api/driver'
 import { useWebSocket } from '@/composables/useWebSocket'
 
@@ -80,9 +80,22 @@ onUnmounted(() => {
       </div>
     </Transition>
 
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">배차 관리</h1>
-      <button @click="initData" class="p-2 bg-white rounded-full shadow-sm text-gray-500 hover:text-emerald-500 transition-colors">
+    <div class="flex items-center gap-3 mb-6">
+      <button
+        type="button"
+        @click="router.back()"
+        class="p-2 bg-white rounded-full shadow-sm text-gray-500 hover:text-gray-800 transition-colors"
+        aria-label="뒤로 가기"
+      >
+        <ArrowLeft class="w-5 h-5" />
+      </button>
+      <h1 class="text-2xl font-bold text-gray-800 flex-1">배차 관리</h1>
+      <button
+        type="button"
+        @click="initData"
+        class="p-2 bg-white rounded-full shadow-sm text-gray-500 hover:text-emerald-500 transition-colors"
+        aria-label="새로고침"
+      >
         <RefreshCw :class="{ 'animate-spin': isLoading }" class="w-5 h-5" />
       </button>
     </div>
