@@ -31,6 +31,9 @@ import {
   UserPlus,
   CreditCard,
   Gift,
+  Users,
+  PlayCircle,
+  Flag,
 } from 'lucide-vue-next'
 
 /**
@@ -110,9 +113,42 @@ const handleNotificationClick = async (idx) => {
   }
 }
 
-// 알림 아이콘/스타일 매핑
-const getNotificationStyle = (type) => {
+// 알림 아이콘/스타일 매핑 (백엔드 type 문자열과 동기화)
+const getNotificationStyle = (rawType) => {
+  const type = String(rawType ?? '').toLowerCase()
   switch (type) {
+    case 'recruit_full':
+      return {
+        icon: Users,
+        bg: 'bg-emerald-50',
+        text: 'text-emerald-600',
+        label: 'text-emerald-500',
+        name: '모집 확정',
+      }
+    case 'driver_assigned':
+      return {
+        icon: CarFront,
+        bg: 'bg-indigo-50',
+        text: 'text-indigo-600',
+        label: 'text-indigo-500',
+        name: '기사 배정',
+      }
+    case 'ride_started':
+      return {
+        icon: PlayCircle,
+        bg: 'bg-sky-50',
+        text: 'text-sky-600',
+        label: 'text-sky-500',
+        name: '운행 시작',
+      }
+    case 'ride_completed':
+      return {
+        icon: Flag,
+        bg: 'bg-violet-50',
+        text: 'text-violet-600',
+        label: 'text-violet-500',
+        name: '운행 종료',
+      }
     case 'matching':
       return {
         icon: UserPlus,
@@ -148,24 +184,41 @@ const getNotificationStyle = (type) => {
   }
 }
 
+const isNotificationRead = (n) => !!(n?.isRead ?? n?.read)
+
 // [Computed] 최신 알림 5개 정렬 및 추출
 const recentNotifications = computed(() => {
-  // 💡 철벽 방어: 확실한 배열(Array)인지 검사
   const safeList = Array.isArray(notifications.value) ? notifications.value : []
 
   const sorted = [...safeList].sort((a, b) => {
-    if (a.read === b.read) return 0
-    return a.read ? 1 : -1
+    const ra = isNotificationRead(a)
+    const rb = isNotificationRead(b)
+    if (ra === rb) return 0
+    return ra ? 1 : -1
   })
   return sorted.slice(0, 5)
 })
 
 // [Computed] 읽지 않은 알림 개수
 const unreadCount = computed(() => {
-  // 💡 철벽 방어: 확실한 배열(Array)인지 검사
   const safeList = Array.isArray(notifications.value) ? notifications.value : []
-  return safeList.filter((n) => !n.read).length
+  return safeList.filter((n) => !isNotificationRead(n)).length
 })
+
+const formatNavNotificationTime = (item) => {
+  const raw = item?.createdAt ?? item?.created_at
+  if (!raw) return ''
+  try {
+    return new Date(raw).toLocaleString('ko-KR', {
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return ''
+  }
+}
 
 // 초기 알림 데이터 로드 (API 호출 -> Store 저장)
 const loadInitialNotifications = async () => {
@@ -173,11 +226,11 @@ const loadInitialNotifications = async () => {
     const safeList = notifications.value || []
 
     if (safeList.length === 0) {
-      // 백엔드 페이징 규격에 맞춰 호출 (page 0, size 10)
       const res = await notificationApi.getNotificationList(0, 10)
-
-      if (res?.data?.result?.boardList) {
-        notificationStore.setNotifications(res.data.result.boardList)
+      const body = res?.data?.result ?? res?.data
+      const list = body?.boardList ?? body?.content ?? []
+      if (Array.isArray(list) && list.length > 0) {
+        notificationStore.setNotifications(list)
       }
     }
   } catch (error) {
@@ -363,10 +416,10 @@ onUnmounted(() => {
 
         <div
           v-for="item in recentNotifications"
-          :key="item.id"
-          @click="handleNotificationClick(item.id)"
+          :key="item.idx"
+          @click="handleNotificationClick(item.idx)"
           class="flex gap-4 items-start group cursor-pointer hover:bg-slate-50 p-2 rounded-2xl transition-colors relative"
-          :class="{ 'opacity-50': item.isRead }"
+          :class="{ 'opacity-50': isNotificationRead(item) }"
         >
           <div
             class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
@@ -380,13 +433,16 @@ onUnmounted(() => {
               <span class="text-[10px] font-bold" :class="getNotificationStyle(item.type).label">
                 {{ getNotificationStyle(item.type).name }}
               </span>
-              <span v-if="!item.isRead" class="w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
+              <span v-if="!isNotificationRead(item)" class="w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
             </div>
 
-            <p class="text-sm text-slate-600 leading-snug line-clamp-2">
-              {{ item.content }}
+            <p v-if="item.title" class="text-xs font-semibold text-slate-800 line-clamp-1">
+              {{ item.title }}
             </p>
-            <span class="text-[10px] text-slate-400">{{ item.time }}</span>
+            <p class="text-sm text-slate-600 leading-snug line-clamp-2">
+              {{ item.contents ?? item.content }}
+            </p>
+            <span class="text-[10px] text-slate-400">{{ formatNavNotificationTime(item) }}</span>
           </div>
         </div>
       </div>
