@@ -45,14 +45,15 @@ export function useWebSocket() {
                 // 연결되면 all-calls topic으로 구독
                 stompClient.value.subscribe('/topic/all-calls', (message) => {
                     if (onMessageCallback) {
-                        // 백엔드에서 날아온 순수 DTO를 파싱
-                        const receivedDto = JSON.parse(message.body)
+                        // // 백엔드에서 날아온 순수 DTO를 파싱
+                        // const receivedDto = JSON.parse(message.body)
 
-                        const formattedData = {
-                            type: 'newRecruit',
-                            payload: receivedDto
-                        }
-                        onMessageCallback({ data: JSON.stringify(formattedData) })
+                        // const formattedData = {
+                        //     type: 'newRecruit',
+                        //     payload: receivedDto
+                        // }
+                        // onMessageCallback({ data: JSON.stringify(formattedData) })
+                        onMessageCallback({ data: message.body })
                     }
                 })
 
