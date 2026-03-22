@@ -34,14 +34,14 @@ const joinButtonState = computed(() => {
         return { text: '정보 없음', disabled: true, class: 'bg-slate-300 text-slate-500 cursor-not-allowed' }
     }
 
+    // 스케줄러가 기사님을 호출한 상태일 때
+    if (props.recruit.status === 'CALLING') {
+        return { text: '🚕 기사님 호출 중', disabled: true, class: 'bg-amber-500 text-white shadow-amber-200 cursor-not-allowed' }
+    }
+
     // 내가 이 방의 주인이나 참여자일 때 -> [복귀 가능]
     if (recruitStore.recruitId === props.recruit.id) {
         return { text: '채팅방으로 복귀', disabled: false, class: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200' }
-    }
-
-    // 수케줄러가 기사님을 호출한 상태일 때
-    if (props.recruit.status === 'CALLING') {
-        return { text: '🚕 기사님 호출 중', disabled: true, class: 'bg-amber-500 text-white shadow-amber-200 cursor-not-allowed' }
     }
 
     // 인원이 다 찼을 때 (기사님 호출 전) -> [마감]
