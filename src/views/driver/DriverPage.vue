@@ -48,6 +48,7 @@ const etaText = ref('--분')
 const passengerName = ref('손님')
 const callInfo = ref({ departure: '', destination: '', path: [] })
 const currentCallIdx = ref(null)
+const currentRecruitIdx = ref(null)
 const myCallInfo = ref(null)
 const isArrived = ref(false)
 
@@ -56,8 +57,38 @@ let map = null
 let driverMarker = null
 let polyline = null
 let driveInterval = null
-let myLat = 37.499935
-let myLng = 126.927324
+
+/** GPS 실패·거부 시 카카오 기본 중심(강남 일대) */
+const DEFAULT_LAT = 37.499935
+const DEFAULT_LNG = 126.927324
+let myLat = DEFAULT_LAT
+let myLng = DEFAULT_LNG
+
+/**
+ * 브라우저 GPS로 myLat/myLng 갱신. 지도·마커가 있고 운행 시뮬레이션 중이 아니면 화면도 맞춤.
+ * @returns {Promise<boolean>} 위치를 받았으면 true
+ */
+const refreshMyLocationFromGps = () =>
+  new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(false)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        myLat = pos.coords.latitude
+        myLng = pos.coords.longitude
+        if (map && driverMarker && !driveInterval) {
+          const latlng = new window.kakao.maps.LatLng(myLat, myLng)
+          driverMarker.setPosition(latlng)
+          map.setCenter(latlng)
+        }
+        resolve(true)
+      },
+      () => resolve(false),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30_000 },
+    )
+  })
 
 /**
  * ==============================================================================
@@ -80,10 +111,89 @@ const initMap = () => {
   })
 }
 
-// 콜 수락 처리
-const acceptCall = () => {
-  showCallModal.value = false
-  showPickupSheet.value = true
+const unwrapApi = (res) => res?.data?.result ?? res?.data
+
+const extractCallList = (body) => {
+  if (!body) return []
+  if (Array.isArray(body)) return body
+  if (Array.isArray(body.content)) return body.content
+  return []
+}
+
+const pathFromCoords = (slat, slng, elat, elng) => {
+  if (slat == null || slng == null || elat == null || elng == null) return []
+  return [
+    { lat: Number(slat), lng: Number(slng) },
+    { lat: Number(elat), lng: Number(elng) },
+  ]
+}
+
+const applyRecruitPayload = (p) => {
+  if (!p || typeof p !== 'object') return
+  const departure = p.startPointName || p.start || p.departure || ''
+  const destination = p.destPointName || p.dest || p.destination || ''
+  callInfo.value = {
+    departure: departure || callInfo.value.departure,
+    destination: destination || callInfo.value.destination,
+    path: pathFromCoords(p.startLat, p.startLng, p.destLat, p.destLng),
+  }
+}
+
+const applyCallDetail = (d) => {
+  if (!d || typeof d !== 'object') return
+  currentCallIdx.value = d.callIdx ?? currentCallIdx.value
+  currentRecruitIdx.value = d.recruitIdx ?? currentRecruitIdx.value
+  callInfo.value = {
+    departure: d.startLocation || '',
+    destination: d.endLocation || '',
+    path: pathFromCoords(d.startLat, d.startLng, d.endLat, d.endLng),
+  }
+  if (typeof d.estimatedFare === 'number') currentFare.value = d.estimatedFare
+}
+
+/** 대기 콜 1건을 불러와 모달에 표시 (배차 브로드캐스트 / 콜 받기 버튼 공통) */
+const loadLatestWaitingCallAndShowModal = async () => {
+  errorMessage.value = ''
+  try {
+    const res = await driverApi.getCallList({ page: 0, size: 30 })
+    const list = extractCallList(unwrapApi(res))
+    const waiting = list.filter((c) => (c.status || '').toString().toUpperCase() === 'WAITING')
+    if (!waiting.length) {
+      showToastError('대기 중인 콜이 없습니다.')
+      return
+    }
+    waiting.sort((a, b) => (b.callIdx || 0) - (a.callIdx || 0))
+    const top = waiting[0]
+    currentCallIdx.value = top.callIdx
+
+    const detailRes = await driverApi.getCallDetail(top.callIdx)
+    const d = unwrapApi(detailRes)
+    applyCallDetail(d)
+    showCallModal.value = true
+  } catch (_) {
+    showToastError('콜 정보를 불러오지 못했습니다.')
+  }
+}
+
+// 콜 수락 처리 (서버 반영 후 픽업 시트)
+const acceptCall = async () => {
+  if (!currentCallIdx.value) {
+    showCallModal.value = false
+    return
+  }
+  try {
+    await driverApi.acceptCall(currentCallIdx.value)
+    showCallModal.value = false
+    showPickupSheet.value = true
+    myCallInfo.value = {
+      callIdx: currentCallIdx.value,
+      startLocation: callInfo.value.departure,
+      endLocation: callInfo.value.destination,
+    }
+  } catch (error) {
+    const msg = error.response?.data?.message || error.response?.data?.result || '콜 수락에 실패했습니다.'
+    showToastError(typeof msg === 'string' ? msg : '콜 수락에 실패했습니다.')
+  }
 }
 
 // 운행 종료 처리
@@ -114,8 +224,14 @@ const startNavigation = async () => {
   naviSub.value = '안전 운전 하세요'
 
   if (callInfo.value.path?.length > 0) {
-    if (isConnected.value) {
-      sendMessage({ type: 'drivingPath', payload: callInfo.value.path })
+    if (isConnected.value && currentRecruitIdx.value) {
+      sendMessage(
+        `/app/chat/send/${currentRecruitIdx.value}`,
+        JSON.stringify({
+          type: 'drivingPath',
+          contents: JSON.stringify(callInfo.value.path),
+        }),
+      )
     }
     runDriveSimulation(callInfo.value.path)
   }
@@ -166,15 +282,18 @@ const runDriveSimulation = (pathData) => {
     if (index % 20 === 0) map.panTo(pos)
 
     // 위치 전송 (API/Socket 연동이 섞여있지만 시뮬레이션 루프의 일부라 여기에 배치)
-    if (index % 20 === 0 && isConnected.value) {
-      sendMessage({
-        type: 'driverLocation',
-        payload: {
-          lat: currentPoint.lat,
-          lng: currentPoint.lng,
-          bearing: currentPoint.bearing || 0
-        }
-      })
+    if (index % 20 === 0 && isConnected.value && currentRecruitIdx.value) {
+      sendMessage(
+        `/app/chat/send/${currentRecruitIdx.value}`,
+        JSON.stringify({
+          type: 'driverLocation',
+          contents: JSON.stringify({
+            lat: currentPoint.lat,
+            lng: currentPoint.lng,
+            bearing: currentPoint.bearing || 0,
+          }),
+        }),
+      )
     }
     index++
   }, 20)
@@ -216,8 +335,14 @@ const toggleTraffic = () => {
     : map.removeOverlayMapTypeId(window.kakao.maps.MapTypeId.TRAFFIC)
 }
 
-const recenterMap = () => {
-  if (driverMarker && map) map.panTo(driverMarker.getPosition())
+const recenterMap = async () => {
+  if (!map) return
+  if (driveInterval) {
+    if (driverMarker) map.panTo(driverMarker.getPosition())
+    return
+  }
+  await refreshMyLocationFromGps()
+  if (driverMarker) map.panTo(driverMarker.getPosition())
 }
 
 const showToastError = (msg) => {
@@ -230,65 +355,45 @@ const showToastError = (msg) => {
  * 5. METHODS - API & NETWORK (서버 연동 및 소켓)
  * ==============================================================================
  */
-// 콜 요청 처리 (API 호출 및 에러 처리)
-const triggerCall = async () => {
-  // 에러 초기화
-  errorMessage.value = ''
-  try {
-    // API 호출 (여기서는 데이터만 받아옴)
-    const res = await driverApi.getNavigationPath()
+// 하단 「콜 받기」: 최신 대기 콜 조회 후 모달
+const triggerCall = () => loadLatestWaitingCallAndShowModal()
 
-    // 비즈니스 로직 및 데이터 검증
-    const naviData = res.data
-    if (naviData && naviData.path) {
-      callInfo.value = {
-        departure: callInfo.value.departure || naviData.departure || '출발지',
-        destination: callInfo.value.destination || naviData.destination || '도착지',
-        path: naviData.path
-      }
-      showCallModal.value = true
-    } else {
-      throw new Error('Invalid Data: 경로 정보 없음')
-    }
-
-  } catch (error) {
-    // 예외 처리는 여기서 통합 수행
-    // console.error('API Error:', error)
-
-    const status = error.response?.status
-    if (status === 404) {
-      showToastError('요청하신 경로를 찾을 수 없습니다.')
-    } else if (status >= 500) {
-      showToastError('서버 통신 오류가 발생했습니다.')
-    } else {
-      showToastError('경로 데이터를 불러오는데 실패했습니다.')
-    }
-    // 에러 상황이어도 모달을 띄워야 한다면 유지, 아니면 제거
-    showCallModal.value = true
-  }
-}
-
-// 소켓 메시지 핸들러
+// 소켓 메시지 핸들러 (/topic/all-calls, /topic/complete)
 const handleSocketMessage = (e) => {
   try {
+    if (!e?.data) return
     let data = JSON.parse(e.data)
 
     if (data.payload && typeof data.payload === 'string') {
-      try { data = JSON.parse(data.payload) } catch (e) { }
+      try {
+        const inner = JSON.parse(data.payload)
+        if (inner && typeof inner === 'object') {
+          data = { ...data, payload: inner }
+        }
+      } catch {
+        /* payload가 "EW_CALL_ADDED" 같은 문자열 */
+      }
     }
 
+    // 새 모집글 (출발/도착만 프리필 — 실제 콜은 스케줄러 이후 생김)
     if (data.type === 'newRecruit' || data.type === 'createRecruit') {
-      if (data.payload) {
-        callInfo.value.departure = data.payload.start || callInfo.value.departure
-        callInfo.value.destination = data.payload.dest || callInfo.value.destination
-        if (data.payload.nickname) {
-          passengerName.value = data.payload.nickname + ' 고객'
-        }
+      if (data.payload && typeof data.payload === 'object') {
+        applyRecruitPayload(data.payload)
       }
-      triggerCall()
     }
-  } catch (err) {
-    // console.error(err)
+
+    // 스케줄러가 콜 생성 후 송신 (CallService.notifyNewCall → /topic/complete)
+    if (data.type === 'recruitFull') {
+      loadLatestWaitingCallAndShowModal()
+      return
+    }
+
+    // 모집 상태가 CALLING으로 바뀐 직후 콜이 생긴 경우
+    if (data.type === 'updateRecruit' && data.payload?.status === 'CALLING') {
+      loadLatestWaitingCallAndShowModal()
+    }
+  } catch (_) {
+    /* ignore */
   }
 }
 
@@ -301,15 +406,19 @@ onMounted(async () => {
   // 1. 진행 중인 콜 조회 + 오늘 수익 계산
   try {
     const res = await driverApi.getMyCall()
-    if (res.data?.callIdx) {
-      currentCallIdx.value = res.data.callIdx
-      myCallInfo.value = res.data
+    const body = unwrapApi(res)
+    if (body?.callIdx) {
+      currentCallIdx.value = body.callIdx
+      currentRecruitIdx.value = body.recruitIdx ?? currentRecruitIdx.value
+      myCallInfo.value = body
     }
   } catch (_) { /* 진행 중인 콜 없음 */ }
 
   try {
     const historyRes = await driverApi.getCallHistory()
-    todayIncome.value = (historyRes.data || []).reduce((sum, c) => sum + (c.estimatedFare || 0), 0)
+    const hBody = unwrapApi(historyRes)
+    const rows = Array.isArray(hBody) ? hBody : hBody?.content ?? []
+    todayIncome.value = rows.reduce((sum, c) => sum + (c.estimatedFare || 0), 0)
   } catch (_) { /* 내역 없음 */ }
 
   // 2. 소켓 연결
@@ -321,7 +430,11 @@ onMounted(async () => {
   const KAKAO_KEY = import.meta.env.VITE_KAKAO_MAP_KEY
   const script = document.createElement('script')
   script.src = `//dapi.kakao.com/v2/maps/sdk.js?autoload=false&appkey=${KAKAO_KEY}&libraries=services`
-  script.onload = () => window.kakao.maps.load(() => initMap())
+  script.onload = () =>
+    window.kakao.maps.load(async () => {
+      await refreshMyLocationFromGps()
+      initMap()
+    })
   document.head.appendChild(script)
 })
 
