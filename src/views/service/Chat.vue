@@ -117,6 +117,7 @@ const normalizeHistoryMessage = (item) => {
 
   const senderId = item.senderId || item.writerIdx || item.userId
   const senderName = item.senderName || item.writer || item.userName
+  const senderImg = item.senderImg || item.senderImageUrl || item.imageUrl || item.userImg || item.img
   const contents = item.contents || item.text || item.message || item.content
 
   if (!contents) return null
@@ -133,7 +134,7 @@ const normalizeHistoryMessage = (item) => {
       userId: senderId || 'Unknown',
       text: contents,
       time: formatTime(timeSource),
-      user: senderName ? { name: senderName } : undefined,
+      user: senderName || senderImg ? { name: senderName, img: senderImg } : undefined,
     }
   }
 
@@ -143,7 +144,7 @@ const normalizeHistoryMessage = (item) => {
     userId: senderId || 'Unknown',
     text: contents,
     time: formatTime(timeSource),
-    user: senderName ? { name: senderName } : undefined,
+    user: senderName || senderImg ? { name: senderName, img: senderImg } : undefined,
   }
 }
 
@@ -154,12 +155,13 @@ const normalizeParticipants = (payload) => {
   return data.reduce((acc, item) => {
     const userId = item.userIdx || item.userId || item.id
     const userName = item.userName || item.name
+    const userImg = item.imageUrl || item.image_url || item.img || item.userImg
     if (!userId || !userName) return acc
     if (String(userId) === String(myUserId.value)) return acc
 
     acc[userId] = {
       name: userName,
-      img: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`,
+      img: userImg || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`,
       lv: 'LV. 1',
       meta: '참여 중',
       bio: '',
@@ -600,7 +602,7 @@ const handleSocketMessage = (data) => {
 
     userId = data.senderId || data.userId || data.writerIdx || data.sender || 'Unknown'
     userName = data.senderName || data.userName || data.writer || data.name
-    userImg = data.senderImg || data.userImg || data.img
+    userImg = data.senderImg || data.senderImageUrl || data.imageUrl || data.userImg || data.img
   } else {
     textContent = String(data)
   }
