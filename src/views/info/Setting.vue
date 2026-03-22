@@ -4,19 +4,54 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { ref } from 'vue'
-import { Bell, ShieldCheck, ExternalLink } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue'
+import { Bell, ShieldCheck, ExternalLink, Loader2 } from 'lucide-vue-next'
 import SettingPageLayout from '@/components/setting/SettingPageLayout.vue'
 import SettingSection from '@/components/setting/SettingSection.vue'
 import SettingGoToPageItem from '@/components/setting/SettingGoToPageItem.vue'
+import pushApi from '@/api/push'
 
 /**
  * ==============================================================================
  * 3. STATE & REFS (상태 변수)
  * ==============================================================================
  */
-// 마케팅 수신 동의 상태 (토글용)
-const marketingConsent = ref(true)
+/** 모집 확정·콜(매칭) 등 서비스 알림 웹푸시 수신 동의 (채팅 메시지 푸시와 별개) */
+const recruitPushConsent = ref(true)
+const pushPrefBusy = ref(false)
+
+const loadPushPreferences = async () => {
+  try {
+    const res = await pushApi.getPreferences()
+    const enabled = res?.data?.result?.recruitPromotionPushEnabled
+    recruitPushConsent.value = enabled !== false
+  } catch {
+    recruitPushConsent.value = true
+  }
+}
+
+const handleRecruitPushToggle = async (event) => {
+  const wantOn = event.target.checked
+  if (pushPrefBusy.value) {
+    event.target.checked = !wantOn
+    return
+  }
+  pushPrefBusy.value = true
+  try {
+    await pushApi.patchRecruitPromotionPush(wantOn)
+    recruitPushConsent.value = wantOn
+  } catch (e) {
+    console.error(e)
+    event.target.checked = recruitPushConsent.value
+    alert('설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+  } finally {
+    pushPrefBusy.value = false
+  }
+}
+
+onMounted(() => {
+  loadPushPreferences()
+})
 </script>
 
 <template>
@@ -26,19 +61,35 @@ const marketingConsent = ref(true)
       
       <SettingSection title="알림 설정" :icon="Bell">
         <div class="space-y-6">
-          <div class="flex items-center justify-between px-2">
-            <div>
-              <p class="text-sm font-bold text-slate-700">마케팅 정보 수신</p>
-              <p class="text-xs text-slate-400 mt-1">
-                이벤트, 쿠폰 및 프로모션 소식을 푸시 알림으로 받습니다.
+          <div class="flex items-center justify-between gap-4 px-2">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-bold text-slate-900">모집·콜 알림</p>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                모집 확정, 기사 배정, 운행 시작·종료 등 알림을 푸시로 받습니다. 채팅 메시지 알림은 채팅방 입장 시 별도로 등록됩니다.
               </p>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" v-model="marketingConsent" class="sr-only peer" />
-              <div
-                class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
-              ></div>
-            </label>
+            <div class="flex shrink-0 items-center gap-2">
+              <label
+                class="relative inline-flex items-center"
+                :class="pushPrefBusy ? 'cursor-wait opacity-70' : 'cursor-pointer'"
+              >
+                <input
+                  type="checkbox"
+                  class="sr-only peer"
+                  :checked="recruitPushConsent"
+                  :disabled="pushPrefBusy"
+                  @change="handleRecruitPushToggle"
+                />
+                <div
+                  class="w-11 h-6 bg-slate-200 peer-focus-visible:outline-none peer-focus-visible:ring-4 peer-focus-visible:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 peer-disabled:opacity-50"
+                ></div>
+              </label>
+              <Loader2
+                v-if="pushPrefBusy"
+                class="w-4 h-4 animate-spin text-violet-500"
+                aria-hidden="true"
+              />
+            </div>
           </div>
         </div>
       </SettingSection>
