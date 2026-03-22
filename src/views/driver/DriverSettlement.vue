@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MapPin, Navigation, Users, Wallet, Phone, CheckCircle } from 'lucide-vue-next'
 import driverApi from '@/api/driver'
@@ -12,10 +12,13 @@ const settlement = ref(null)
 const isLoading = ref(true)
 const error = ref('')
 
+const participantCount = computed(() => settlement.value?.participants?.length ?? 0)
+
 onMounted(async () => {
   try {
     const res = await driverApi.getSettlement(callIdx)
-    settlement.value = res.data
+    const body = res.data?.result ?? res.data
+    settlement.value = body
   } catch (e) {
     error.value = '정산 정보를 불러오지 못했습니다.'
   } finally {
@@ -82,9 +85,13 @@ onMounted(async () => {
           </div>
           <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-center">
             <Users class="w-6 h-6 text-indigo-600 mx-auto mb-1.5" />
-            <p class="text-xs text-indigo-700 font-medium mb-1">인당 요금 (1/{{ settlement.participants?.length || 1 }})</p>
+            <p class="text-xs text-indigo-700 font-medium mb-1">
+              <template v-if="participantCount === 0">인당 분담 (탑승객 0명)</template>
+              <template v-else>인당 요금 ({{ participantCount }}명 · 1/N 기준)</template>
+            </p>
             <p class="text-xl font-black text-indigo-800">
-              {{ (settlement.farePerPerson || 0).toLocaleString() }}<span class="text-sm font-normal ml-0.5">원</span>
+              <template v-if="participantCount === 0">—</template>
+              <template v-else>{{ (settlement.farePerPerson || 0).toLocaleString() }}<span class="text-sm font-normal ml-0.5">원</span></template>
             </p>
           </div>
         </div>
@@ -93,27 +100,35 @@ onMounted(async () => {
         <div>
           <div class="flex items-center gap-2 mb-3">
             <Users class="w-4 h-4 text-gray-400" />
-            <span class="text-sm font-semibold text-gray-600">탑승객 ({{ settlement.participants?.length || 0 }}명)</span>
+            <span class="text-sm font-semibold text-gray-600">탑승객 ({{ participantCount }}명)</span>
           </div>
           <div class="space-y-2">
             <div
               v-for="(p, i) in settlement.participants"
               :key="i"
-              class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-100"
+              class="flex items-center justify-between gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100"
             >
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
                   {{ (p.nickname || '?').charAt(0) }}
                 </div>
-                <span class="font-semibold text-gray-800">{{ p.nickname }}</span>
+                <div class="min-w-0">
+                  <p class="font-semibold text-gray-800 truncate">{{ p.nickname || '이름 없음' }}</p>
+                  <a
+                    :href="`tel:${p.phoneNumber}`"
+                    class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-xs font-medium mt-0.5"
+                  >
+                    <Phone class="w-3.5 h-3.5" />
+                    {{ p.phoneNumber || '-' }}
+                  </a>
+                </div>
               </div>
-              <a
-                :href="`tel:${p.phoneNumber}`"
-                class="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-              >
-                <Phone class="w-4 h-4" />
-                {{ p.phoneNumber }}
-              </a>
+              <div class="shrink-0 text-right">
+                <p class="text-xs text-gray-500 font-medium">분담</p>
+                <p class="text-lg font-black text-indigo-800">
+                  {{ (p.shareAmount ?? settlement.farePerPerson ?? 0).toLocaleString() }}<span class="text-xs font-semibold ml-0.5">원</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
