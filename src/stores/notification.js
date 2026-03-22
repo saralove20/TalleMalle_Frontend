@@ -31,19 +31,29 @@ export const useNotificationStore = defineStore('notification', {
      * - View에서 API 호출 성공 후, 받은 데이터를 이 함수를 통해 저장합니다.
      */
     setNotifications(data) {
-      // API 응답 문제로 undefined 등이 들어오더라도 배열 오류가 나지 않도록 빈 배열 보장
-      this.notifications = data || []
+      const list = data || []
+      // Jackson이 boolean isRead를 JSON 키 "read"로보내는 경우가 있어 통일 (새로고침 후에도 읽음 유지)
+      this.notifications = list.map((n) => {
+        const read = !!(n.isRead ?? n.read)
+        return { ...n, isRead: read, read }
+      })
     },
 
     // 모든 알림 읽음 처리
     markAllAsRead() {
-      this.notifications.forEach((n) => (n.isRead = true))
+      this.notifications.forEach((n) => {
+        n.isRead = true
+        n.read = true
+      })
     },
 
     // 특정 알림 읽음 처리 (API 명세에 맞춰 매개변수를 id에서 idx로 수정)
     markAsRead(idx) {
       const item = this.notifications.find((n) => n.idx === idx)
-      if (item) item.isRead = true
+      if (item) {
+        item.isRead = true
+        item.read = true
+      }
     },
 
     // 알림 삭제 (API 명세에 맞춰 매개변수를 id에서 idx로 수정)

@@ -109,10 +109,8 @@ const handleReadItem = async (idx) => {
     return
   }
   try {
-    // 1. 화면 즉각 갱신 (낙관적 업데이트)
-    store.markAsRead(idx)
-    // 2. 백엔드 API 호출
     await notificationApi.readNotification(idx)
+    store.markAsRead(idx)
   } catch (error) {
     console.error('알림 읽음 처리 실패:', error)
   }
@@ -120,8 +118,8 @@ const handleReadItem = async (idx) => {
 
 const handleMarkAllRead = async () => {
   try {
-    store.markAllAsRead()
     await notificationApi.readAllNotifications()
+    store.markAllAsRead()
   } catch (error) {
     console.error('모든 알림 읽음 처리 실패:', error)
   }
