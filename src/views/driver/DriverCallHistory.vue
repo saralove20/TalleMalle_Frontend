@@ -7,12 +7,44 @@ import driverApi from '@/api/driver'
 const router = useRouter()
 const history = ref([])
 const isLoading = ref(false)
+const historyPage = ref(0)
+const hasMoreHistory = ref(false)
+const totalEstimatedFare = ref(0)
+const totalHistoryCount = ref(0)
 
-const fetchHistory = async () => {
+const fetchHistory = async (append = false) => {
   isLoading.value = true
   try {
-    const res = await driverApi.getCallHistory()
-    history.value = res.data
+    if (!append) {
+      historyPage.value = 0
+    }
+    const res = await driverApi.getCallHistory({
+      page: historyPage.value,
+      size: 20,
+    })
+    const raw = res.data
+    // 페이징 객체 | 구버전 배열 | BaseResponse.result 모두 허용
+    const body = raw?.result != null ? raw.result : raw
+    let chunk = []
+    if (Array.isArray(body)) {
+      chunk = body
+    } else if (Array.isArray(body?.content)) {
+      chunk = body.content
+    }
+    if (append) {
+      history.value = [...history.value, ...chunk]
+    } else {
+      history.value = chunk
+    }
+    if (Array.isArray(body)) {
+      totalEstimatedFare.value = chunk.reduce((s, c) => s + (c.estimatedFare || 0), 0)
+      totalHistoryCount.value = chunk.length
+      hasMoreHistory.value = false
+    } else {
+      totalEstimatedFare.value = body?.totalEstimatedFare ?? 0
+      totalHistoryCount.value = body?.totalElements ?? chunk.length
+      hasMoreHistory.value = body?.last === false
+    }
   } catch (error) {
     console.error('운행 내역 로드 실패:', error)
   } finally {
@@ -20,7 +52,11 @@ const fetchHistory = async () => {
   }
 }
 
-const totalFare = () => history.value.reduce((sum, call) => sum + (call.estimatedFare || 0), 0)
+const loadMoreHistory = async () => {
+  if (!hasMoreHistory.value || isLoading.value) return
+  historyPage.value += 1
+  await fetchHistory(true)
+}
 
 onMounted(() => fetchHistory())
 </script>
@@ -38,10 +74,10 @@ onMounted(() => fetchHistory())
       </button>
     </div>
 
-    <div v-if="history.length > 0" class="bg-emerald-600 rounded-2xl p-5 mb-6 shadow-lg shadow-emerald-200">
+    <div v-if="history.length > 0 || totalHistoryCount > 0" class="bg-emerald-600 rounded-2xl p-5 mb-6 shadow-lg shadow-emerald-200">
       <p class="text-emerald-100 text-sm font-medium mb-1">누적 예상 수익</p>
-      <p class="text-white text-3xl font-black font-mono">{{ totalFare().toLocaleString() }} <span class="text-xl font-normal">원</span></p>
-      <p class="text-emerald-200 text-xs mt-1">총 {{ history.length }}건 운행 완료</p>
+      <p class="text-white text-3xl font-black font-mono">{{ totalEstimatedFare.toLocaleString() }} <span class="text-xl font-normal">원</span></p>
+      <p class="text-emerald-200 text-xs mt-1">총 {{ totalHistoryCount }}건 운행 완료</p>
     </div>
 
     <div v-if="isLoading && history.length === 0" class="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -94,5 +130,16 @@ onMounted(() => fetchHistory())
         </div>
       </li>
     </ul>
+
+    <div v-if="hasMoreHistory" class="mt-6 flex justify-center">
+      <button
+        type="button"
+        class="px-6 py-3 rounded-2xl bg-white border border-gray-200 text-gray-700 font-semibold shadow-sm hover:border-emerald-400 hover:text-emerald-700 transition-colors"
+        :disabled="isLoading"
+        @click="loadMoreHistory"
+      >
+        더 보기
+      </button>
+    </div>
   </div>
 </template>

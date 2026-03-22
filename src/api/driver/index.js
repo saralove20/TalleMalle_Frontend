@@ -18,8 +18,10 @@ const signup = async (req) => {
   return await api.post('/driver/signup', req)
 }
 
-const getCallList = async () => {
-  return await api.get('/call/list')
+const getCallList = async (params = {}) => {
+  return await api.get('/call/list', {
+    params: { page: 0, size: 20, ...params },
+  })
 }
 
 
@@ -60,8 +62,10 @@ const completeCall = async (callIdx) => {
   return await api.patch(`/call/complete/${callIdx}`)
 }
 
-const getCallHistory = async () => {
-  return await api.get('/call/history')
+const getCallHistory = async (params = {}) => {
+  return await api.get('/call/history', {
+    params: { page: 0, size: 20, ...params },
+  })
 }
 
 const getSettlement = async (callIdx) => {

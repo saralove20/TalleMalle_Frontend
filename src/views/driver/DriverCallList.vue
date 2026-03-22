@@ -27,8 +27,8 @@ const fetchMyCall = async () => {
 const fetchCalls = async () => {
   isLoading.value = true
   try {
-    const res = await driverApi.getCallList()
-    calls.value = res.data
+    const res = await driverApi.getCallList({ page: 0, size: 50 })
+    calls.value = res.data.content ?? res.data
     showUpdateAlert.value = false 
   } catch (error) {
     console.error('콜 목록 로드 실패:', error)
