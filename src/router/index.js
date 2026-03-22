@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useRecruitStore } from '@/stores/recruit'
+import userApi from '@/api/user'
 import Main from '@/views/service/Main.vue'
 import Login from '@/views/auth/Login.vue'
 import SocialLoginSuccess from '@/views/auth/SocialLoginSuccess.vue'
@@ -190,15 +192,31 @@ const router = createRouter({
 })
 
 // 네비게이션 가드
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
   const recruitStore = useRecruitStore()
-  const user = localStorage.getItem('USERINFO')
-  const myStatus = localStorage.getItem('myStatus')
 
-  console.log('체크 결과 - 유저정보:', !!user)
+  // 1. 인증 복구 로직 (새로고침 대응)
+  // 스토어에 유저가 없는데 토큰(인증 쿠키)이 있을 가능성이 있는 경우
+  // 유저 정보가 없고, 로그인이 필요한 페이지로 이동할 때만 1회 호출
+  if (!authStore.user && to.meta.requiresAuth) {
+    try {
+      // 서버에 내 정보 요청 (App.vue에서 하던 역할을 여기서 먼저 수행)
+      const res = await userApi.getMe()
+      if (res.data) {
+        authStore.login(res.data)
+        console.log('새로고침 시 authStore 유저정보', authStore.user)
+      }
+    } catch (error) {
+      // 인증 실패 시 (토큰 만료 등)
+      console.error('인증 복구 실패:', error)
+      // 토큰 만료 등의 사유로 실패 시 스토어 초기화
+      authStore.logout()
+    }
+  }
 
-  // 로그인 체크 (requiresAuth)
-  if (to.meta.requiresAuth && !user) {
+  // 2. 로그인 체크 (requiresAuth)
+  if (to.meta.requiresAuth && !authStore.user) {
     alert('로그인이 필요한 서비스입니다.')
     next('/login')
   } else {

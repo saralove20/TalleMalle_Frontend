@@ -16,6 +16,10 @@ const login = async (req) => {
   })
 }
 
+const getMe = async () => {
+  return await api.get('/user/me')
+}
+
 const logout = async (req) => {
   return await api.post('/user/logout', req)
 }
@@ -49,6 +53,7 @@ const resendVerify = async (email) => {
 
 export default {
   login,
+  getMe,
   logout,
   signup,
   extraSignup,
