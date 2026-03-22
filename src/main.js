@@ -15,7 +15,7 @@ pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 app.use(router)
 
-// .env 파일에서 키 가져오기
+// .env.development 파일에서 키 가져오기
 const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY
 
 // 스크립트 태그 동적 생성

@@ -1,17 +1,13 @@
 <script setup>
 import { computed } from 'vue'
-import { RouterView, useRoute, useRouter } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
 import TheSidebar from './components/layout/Nav.vue'
 import ErrorBoundary from './components/util/ErrorBoundary.vue'
 
 const route = useRoute()
-const router = useRouter()
 
-const isLoginPage = computed(() => route.path === '/login')
 const isDriverMode = computed(() => route.path.startsWith('/driver'))
 const showSidebar = computed(() => !route.meta.hideNavbar && !isDriverMode.value)
-
-const goToDriverLogin = () => router.push('/driverlogin')
 </script>
 
 <template>
