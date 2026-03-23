@@ -12,7 +12,7 @@ import EmailWait from '@/views/auth/EmailWait.vue'
 import EmailVerifySuccess from '@/views/auth/EmailVerifySuccess.vue'
 import Chat from '@/views/service/Chat.vue'
 import ChatList from '@/views/service/ChatList.vue'
-import MyPage from '@/views/user/MyPage.vue'
+import MyPage from '@/views/profile/MyPage.vue'
 import FindPassword from '@/views/auth/FindPassword.vue'
 import ResetPassword from '@/views/auth/ResetPassword.vue'
 import Setting from '@/views/info/Setting.vue'
@@ -198,7 +198,7 @@ router.beforeEach(async (to, from, next) => {
   const driverStore = useDriverStore()
   const recruitStore = useRecruitStore()
 
-  // 드라이버 전용 라우트: 승객용 /user/me 를 호출하지 않음 (드라이버 JWT면 401 → 인증 복구 실패)
+  // 드라이버 전용 라우트: 승객용 /profile/me 를 호출하지 않음 (드라이버 JWT면 401 → 인증 복구 실패)
   if (to.meta.requiresDriver) {
     if (!driverStore.driver) {
       alert('드라이버 로그인이 필요한 서비스입니다.')
