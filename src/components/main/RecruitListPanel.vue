@@ -6,7 +6,6 @@
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { MapPin, Navigation, ListFilter } from 'lucide-vue-next'
-// 새로 만든 컴포넌트 import
 import RecruitListItem from './RecruitListItem.vue'
 
 /**
@@ -21,7 +20,7 @@ const props = defineProps({
     isSocketConnected: Boolean
 })
 
-const emit = defineEmits(['expand', 'select', 'search'])
+const emit = defineEmits(['expand', 'select', 'search', 'load-more'])
 
 /**
  * ==============================================================================
@@ -42,6 +41,10 @@ let destSearchTimeout = null // 목적지용 디바운싱 타이머
 let isSelecting = false
 let lastStartKeyword = ''
 let lastDestKeyword = ''
+
+// 무한 스크롤 관찰자
+const observerTarget = ref(null)
+let observer = null
 
 /**
  * ==============================================================================
@@ -228,12 +231,26 @@ const handleOutsideClick = (e) => {
 
 // 컴포넌트가 화면에 나타날 때 클릭 감지기 켜기
 onMounted(() => {
-    document.addEventListener('click', handleOutsideClick)
+    document.addEventListener('click', handleOutsideClick);
+
+    observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && props.recruitList.length > 0) {
+            emit('load-more');
+        }
+    }, { threshold: 0.1 });
+
+    if (observerTarget.value) {
+        observer.observe(observerTarget.value);
+    }
 })
 
-// 컴포넌트가 화면에서 사라질 때 클릭 감지기 끄기 (메모리 누수 방지)
 onUnmounted(() => {
-    document.removeEventListener('click', handleOutsideClick)
+    document.removeEventListener('click', handleOutsideClick);
+
+    if (observer) {
+        observer.disconnect();
+        observer = null;
+    }
 })
 </script>
 
@@ -297,6 +314,8 @@ onUnmounted(() => {
 
             <RecruitListItem v-for="item in filteredList" :key="item.id" :item="item"
                 :is-selected="selectedId === item.id" @click="handleSelectItem(item)" />
+
+            <div ref="observerTarget" class="h-4 w-full shrink-0"></div>
         </div>
     </div>
 </template>
