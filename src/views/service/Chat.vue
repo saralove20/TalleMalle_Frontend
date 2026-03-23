@@ -178,32 +178,78 @@ const normalizeParticipants = (payload) => {
   }, {})
 }
 
+const getRecruitStatus = (data) => {
+  const raw =
+    data?.status ||
+    data?.recruitStatus ||
+    data?.recruit?.status ||
+    data?.recruit?.recruitStatus ||
+    null
+  return raw ? String(raw).toUpperCase() : null
+}
+
+const getDriverName = (data) => {
+  return (
+    data?.call?.driver?.name ||
+    data?.call?.driverName ||
+    data?.call?.driver?.nickname ||
+    data?.call?.driver?.userName ||
+    data?.driver?.name ||
+    data?.driverName ||
+    data?.driver?.nickname ||
+    null
+  )
+}
+
 const mapRecruitToRideInfo = (payload) => {
   if (!payload) return null
 
   const data = payload.result ?? payload
   if (!data) return null
 
-  const startTime = data.departureTime ? formatTime(data.departureTime) : '--:--'
+  const startTime =
+    data.departureTime || data.startTime
+      ? formatTime(data.departureTime || data.startTime)
+      : '--:--'
+
+  const status = getRecruitStatus(data)
+  const driverName = getDriverName(data)
+  const totalFare = Number(data.estimatedFare ?? data.estimated_fare ?? 0)
+  const myFare = Number(data.myFare ?? data.my_fare ?? 0)
+  const isMatching = ['RECRUITING', 'FULL', 'CALLING'].includes(status)
+  const isDriven = ['DRIVING', 'END'].includes(status)
 
   return {
     driver: {
-      type: '모집자',
-      name: data.ownerName || '알 수 없음',
+      type: '택시',
+      name: isMatching ? '매칭 대기중' : isDriven ? driverName || '알 수 없음' : driverName || '매칭 대기중',
       car: '-',
       plate: '-',
     },
     route: {
-      start: data.startPointName || '...',
-      dest: data.destPointName || '...',
+      start: data.startPointName || data.startPoint || data.startLocation || '...',
+      dest: data.destPointName || data.destPoint || data.endLocation || '...',
       startTime,
       endTime: startTime,
     },
     payment: {
       status: '예상',
-      total: 0,
-      mine: 0,
+      total: Number.isFinite(totalFare) ? totalFare : 0,
+      mine: Number.isFinite(myFare) ? myFare : 0,
     },
+    status,
+  }
+}
+
+const mergeRideInfo = (primary, fallback) => {
+  if (!primary && !fallback) return null
+  if (!primary) return fallback
+  if (!fallback) return primary
+  return {
+    driver: { ...fallback.driver, ...primary.driver },
+    route: { ...fallback.route, ...primary.route },
+    payment: { ...fallback.payment, ...primary.payment },
+    status: primary.status || fallback.status,
   }
 }
 
@@ -377,7 +423,7 @@ const fetchInitialData = async () => {
     const [historyResult, participantsResult, rideDetailResult] = await Promise.allSettled([
       roomId.value ? api.getChatHistory(roomId.value, { size: PAGE_SIZE }) : Promise.resolve([]),
       roomId.value ? api.getChatParticipants(roomId.value) : Promise.resolve([]),
-      !storeRideInfo && roomId.value ? api.getRideDetail(roomId.value) : Promise.resolve(null),
+      roomId.value ? api.getRideDetail(roomId.value) : Promise.resolve(null),
     ])
 
     if (historyResult.status === 'fulfilled') {
@@ -473,8 +519,9 @@ const fetchInitialData = async () => {
       }
     }
 
-    // 스토어 데이터 우선 적용, 없으면 API 데이터 사용
-    rideInfo.value = storeRideInfo || mapRecruitToRideInfo(apiRideDetail) || null
+    // API 기반 여정 정보 우선 적용, 스토어 데이터는 누락값 보정용으로 병합
+    const apiRideInfo = mapRecruitToRideInfo(apiRideDetail)
+    rideInfo.value = mergeRideInfo(apiRideInfo, storeRideInfo)
 
     // Unknown 유저 안전장치
     if (!usersData.value['Unknown']) {
