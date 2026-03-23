@@ -27,7 +27,7 @@ const checkEmail = async (email) => {
 }
 
 const checkNickname = async (nickname) => {
-  return await api.get('/driver/signup/check-nickname', { params: { nickname } })
+  return await api.get('/driver/check-nickname', { params: { nickname } })
 }
 
 const getCallList = async (params = {}) => {
