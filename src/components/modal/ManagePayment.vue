@@ -5,7 +5,6 @@
  * ==============================================================================
  */
 import { CreditCard, Trash2, Check } from 'lucide-vue-next'
-import { useProfileStore } from '@/stores/profile'
 import api from '@/api/payment'
 
 /**
@@ -13,7 +12,6 @@ import api from '@/api/payment'
  * 2. CONFIG & STORES (설정 및 스토어 초기화)
  * ==============================================================================
  */
-const profileStore = useProfileStore()
 
 const props = defineProps({
   selectedPayment: {

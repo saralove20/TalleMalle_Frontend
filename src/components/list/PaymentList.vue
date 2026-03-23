@@ -8,9 +8,6 @@ import { computed, onMounted, reactive, shallowRef } from 'vue'
 import { CreditCard } from 'lucide-vue-next'
 import api from '@/api/payment'
 
-// Stores
-import { useProfileStore } from '@/stores/profile'
-
 // Components
 import RoundBox from '@/components/layout/RoundBox.vue'
 import PaymentEntry from '@/components/entry/PaymentEntry.vue'
@@ -20,7 +17,6 @@ import PaymentEntry from '@/components/entry/PaymentEntry.vue'
  * 2. CONFIG & STORES (설정 및 스토어 초기화)
  * ==============================================================================
  */
-const profileStore = useProfileStore()
 const emits = defineEmits(['manage-payment'])
 const paymentInst = shallowRef(null)
 const clientKey = 'test_ck_Gv6LjeKD8aYKA6qPb5QL8wYxAdXy'

@@ -7,7 +7,7 @@
 import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { UserMinus } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
-import { useProfileStore } from '@/stores/profile'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/api/profile'
 import RoundBox from '@/components/layout/RoundBox.vue'
 import ManagePayment from '@/components/modal/ManagePayment.vue'
@@ -25,7 +25,7 @@ import WithdrawConfirm from '@/components/modal/WithdrawConfirm.vue'
  * 2. CONFIG & STORES (설정 및 스토어 초기화)
  * ==============================================================================
  */
-const profileStore = useProfileStore()
+const authStore = useAuthStore()
 const router = useRouter()
 
 /**
@@ -36,14 +36,6 @@ const router = useRouter()
 const activeTab = ref('history') // 'history' | 'reviews'
 
 // 모달 상태 관리
-const isRideHistoryModalOpen = ref(false)
-const isEditPaymentModalOpen = ref(false)
-const isEditProfileOpen = ref(false)
-const isReviewModalOpen = ref(false)
-const isPaymentActionModalOpen = ref(false)
-const isLimitReachedModalOpen = ref(false)
-const isWithdrawModalOpen = ref(false)
-
 const activeModal = ref('none')
 
 // 선택된 데이터 상태
@@ -67,7 +59,7 @@ const scrollState = reactive({
  */
 // 탭 전환 및 데이터 변경 감지 워처 (스크롤 상태 계산)
 watch(
-  [activeTab, () => profileStore.userInfo.history, () => profileStore.userInfo.review],
+  [activeTab, () => authStore.history, () => authStore.review],
   async () => {
     await nextTick()
     if (activeTab.value === 'history') checkScroll(historyScrollRef.value, 'history')
@@ -104,7 +96,7 @@ const switchTab = (tab) => {
 
 // 탑승 상세 정보 열기
 const openRideDetail = (id) => {
-  const selected = profileStore.userInfo.history.find((item) => item.id === id)
+  const selected = authStore.history.find((item) => item.id === id)
   if (selected) {
     currentHistory.value = selected
     handleModal('history-detail')
@@ -155,16 +147,16 @@ const fetchAllUserInfo = async () => {
     const [profileResult, paymentResult, historyResult, reviewResult] = results
 
     if (profileResult.status === 'fulfilled' && profileResult.value.data?.result) {
-      profileStore.loadProfile(profileResult.value.data.result)
+      authStore.updateUser(profileResult.value.data.result)
     }
     if (paymentResult.status === 'fulfilled' && paymentResult.value.data?.result) {
-      profileStore.loadPayment(paymentResult.value.data.result)
+      authStore.setPayment(paymentResult.value.data.result)
     }
     if (historyResult.status === 'fulfilled' && historyResult.value.data?.result) {
-      profileStore.loadHistory(historyResult.value.data.result)
+      authStore.setHistory(historyResult.value.data.result)
     }
     if (reviewResult.status === 'fulfilled' && reviewResult.value.data?.result) {
-      profileStore.loadReview(reviewResult.value.data.result)
+      authStore.setReview(reviewResult.value.data.result)
     }
   } catch (error) {
     console.error('Critical error during fetchAllData:', error)
@@ -202,7 +194,7 @@ onMounted(async () => {
           <div class="text-right">
             <p class="text-[10px] font-bold text-slate-400 uppercase">누적 동승</p>
             <p class="text-lg font-black text-indigo-600">
-              {{ profileStore.userInfo.history?.length || 0 }}회
+              {{ authStore.history?.length || 0 }}회
             </p>
           </div>
           <div class="w-px h-8 bg-slate-200 self-center"></div>
@@ -224,17 +216,17 @@ onMounted(async () => {
               <div class="relative w-28 h-28 mx-auto mb-4 mt-4">
                 <img
                   :src="
-                    profileStore.userInfo.profile.imageUrl ||
+                    authStore.user?.imageUrl ||
                     'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
                   "
                   class="w-full h-full rounded-full bg-white border-4 border-white shadow-xl object-cover"
                 />
               </div>
               <h2 class="text-xl font-bold text-slate-900">
-                {{ profileStore.userInfo.profile.nickname || '사용자' }}
+                {{ authStore.user?.nickname || '사용자' }}
               </h2>
               <p class="text-xs text-slate-400 mb-6 text-center tracking-tight leading-relaxed">
-                {{ profileStore.userInfo.profile.introduction || '등록된 자기소개가 없습니다.' }}
+                {{ authStore.user?.introduction || '등록된 자기소개가 없습니다.' }}
               </p>
               <button
                 @click="handleModal('edit-profile')"
@@ -256,7 +248,7 @@ onMounted(async () => {
                   <div class="flex items-baseline gap-2">
                     <div class="flex items-baseline gap-1">
                       <span class="text-4xl font-black text-indigo-600 tracking-tighter">
-                        {{ profileStore.userInfo.profile.rating || 0 }}
+                        {{ authStore.user?.rating || 0 }}
                       </span>
                       <span class="text-sm font-bold text-slate-300">/ 100</span>
                     </div>
@@ -269,7 +261,7 @@ onMounted(async () => {
               <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-2">
                 <div
                   class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500"
-                  :style="{ width: (profileStore.userInfo.profile.rating || 0) + '%' }"
+                  :style="{ width: (authStore.user?.rating || 0) + '%' }"
                 ></div>
               </div>
             </RoundBox>
@@ -320,7 +312,7 @@ onMounted(async () => {
                 >
                   받은 리뷰
                   <span class="ml-1 text-[10px] bg-slate-100 px-1.5 py-0.5 rounded-md">
-                    {{ profileStore.userInfo.review?.length || 0 }}
+                    {{ authStore.review?.length || 0 }}
                   </span>
                 </button>
               </div>
@@ -341,13 +333,13 @@ onMounted(async () => {
                     class="h-full overflow-y-auto custom-scroll p-6 pb-20 flex flex-col gap-2.5"
                   >
                     <HistoryEntry
-                      v-for="item in profileStore.userInfo.history"
+                      v-for="item in authStore.history"
                       :key="item.id"
                       v-bind="item"
                       @click="openRideDetail(item.id)"
                     />
                     <div
-                      v-if="profileStore.userInfo.history?.length === 0"
+                      v-if="authStore.history?.length === 0"
                       class="h-full flex items-center justify-center text-slate-300 text-sm font-medium"
                     >
                       기록이 없습니다.
@@ -371,14 +363,14 @@ onMounted(async () => {
                   >
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
                       <ReviewEntry
-                        v-for="item in profileStore.userInfo.review"
+                        v-for="item in authStore.review"
                         :key="item.id"
                         :review="item"
                         @click="openMyReview(item)"
                       />
                     </div>
                     <div
-                      v-if="profileStore.userInfo.review?.length === 0"
+                      v-if="authStore.review?.length === 0"
                       class="h-full flex items-center justify-center text-slate-300 text-sm font-medium"
                     >
                       리뷰가 없습니다.

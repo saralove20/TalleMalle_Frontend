@@ -6,19 +6,17 @@
  */
 import { ref, onMounted } from 'vue'
 import { X, Camera, UserCircle } from 'lucide-vue-next'
-import { useProfileStore } from '@/stores/profile'
+import { useAuthStore } from '@/stores/auth'
 import LabeledInput from '@/components/Input/LabeledInput.vue'
 import RoundBox from '@/components/layout/RoundBox.vue'
 import api from '@/api/profile'
-
-import axios from 'axios'
 
 /**
  * ==============================================================================
  * 2. CONFIG & STORES (설정 및 스토어 초기화)
  * ==============================================================================
  */
-const profileStore = useProfileStore()
+const authStore = useAuthStore()
 const emits = defineEmits(['modal'])
 
 /**
@@ -82,7 +80,6 @@ const handleImageUpload = async (event) => {
     })
 
     if (!uploadResponse.ok) {
-      // 에러 응답 본문을 읽어서 더 상세한 정보를 출력 (S3는 XML로 에러 사유를 알려줌)
       const errorText = await uploadResponse.text()
       console.error('S3 에러 상세:', errorText)
       throw new Error(`S3 업로드 실패: ${uploadResponse.status} ${uploadResponse.statusText}`)
@@ -95,7 +92,7 @@ const handleImageUpload = async (event) => {
     console.error('이미지 업로드 중 오류 발생:', error)
     alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
     // 실패 시 기존 이미지로 복구
-    localProfile.value.imageUrl = profileStore.userInfo.profile.imageUrl
+    localProfile.value.imageUrl = authStore.user?.imageUrl
   } finally {
     isUploading.value = false
   }
@@ -122,13 +119,8 @@ const handleSave = async () => {
       // 서버 응답 데이터가 있으면 사용하고, 없으면 요청했던 데이터 사용
       const updatedData = res.data?.result || updatePayload
       
-      // 스토어 업데이트 (수정 불가 항목들도 함께 동기화)
-      profileStore.loadProfile({
-        ...updatedData,
-        phoneNumber: localProfile.value.phoneNumber,
-        birth: localProfile.value.birth,
-        gender: localProfile.value.gender
-      })
+      // 스토어 업데이트
+      authStore.updateUser(updatedData)
       
       alert('프로필 정보가 저장되었습니다.')
       handleClose()
@@ -156,7 +148,9 @@ const handleClose = () => {
  * ==============================================================================
  */
 onMounted(() => {
-  Object.assign(localProfile.value, JSON.parse(JSON.stringify(profileStore.userInfo.profile)))
+  if (authStore.user) {
+    Object.assign(localProfile.value, JSON.parse(JSON.stringify(authStore.user)))
+  }
 })
 </script>
 
@@ -229,7 +223,7 @@ onMounted(() => {
               :length="{ max: 20 }"
             />
 
-            <!-- 한 줄 소개 (닉네임 바로 밑으로 이동) -->
+            <!-- 한 줄 소개 -->
             <div>
               <label class="block text-xs font-bold text-slate-400 mb-2 ml-1">한 줄 소개</label>
               <textarea

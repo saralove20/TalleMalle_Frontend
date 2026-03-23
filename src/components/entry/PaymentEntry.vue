@@ -6,15 +6,11 @@
  */
 import { CheckCircle2 } from 'lucide-vue-next'
 
-// Stores
-import { useProfileStore } from '@/stores/profile'
-
 /**
  * ==============================================================================
  * 2. CONFIG & STORES (설정 및 스토어 초기화)
  * ==============================================================================
  */
-const profileStore = useProfileStore()
 
 const props = defineProps({
   billing: {
