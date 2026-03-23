@@ -5,7 +5,7 @@
  * ==============================================================================
  */
 
-import { ref, computed, onUnmounted, reactive } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   CarFront,
@@ -14,11 +14,12 @@ import {
   Lock,
   CheckCircle2,
   Check,
-  Info,
+  ShieldCheck,
+  Smartphone,
   Send,
-  AlertCircle,
 } from 'lucide-vue-next'
 import api from '@/api/driver'
+import * as PortOne from '@portone/browser-sdk/v2'
 
 /**
  * ==============================================================================
@@ -41,6 +42,7 @@ const form = ref({
   phoneNumber: '',
   birth: '',
   gender: '',
+  identityVerificationId: '',
   email: '',
   password: '',
   passwordConfirm: '',
@@ -51,8 +53,7 @@ const form = ref({
 
 // 인증 관련 상태
 const verification = ref({
-  isPhoneVerified: false, // 휴대폰 인증 성공 여부
-
+  isIdentityVerified: false, // 본인 인증 성공 여부
   isEmailVerified: false, // 이메일 인증 성공 여부
   phoneCode: '',
   emailCode: '',
@@ -66,11 +67,19 @@ const verification = ref({
 const errors = ref({
   phoneNumber: '',
   email: '',
+  nickname: '',
   password: '',
   passwordMatch: false,
 })
 
 const authCodeInput = ref('')
+
+const formatPhoneNumber = (phoneNumber) => {
+  if (!phoneNumber) return ''
+  return phoneNumber
+    .replace(/[^0-9]/g, '')
+    .replace(/^(\d{3})(\d{3,4})(\d{4})$/, '$1-$2-$3')
+}
 
 /**
  * ==============================================================================
@@ -145,7 +154,7 @@ const confirmAuth = (inputCode) => {
     verification.value.isTimerRunning = false
 
     if (verification.value.currentType === 'phoneNumber') {
-      verification.value.isPhoneVerified = true
+      verification.value.isIdentityVerified = true
     } else {
       verification.value.isEmailVerified = true
     }
@@ -157,7 +166,7 @@ const confirmAuth = (inputCode) => {
 }
 
 // 단계 이동 (유효성 검증 수정)
-const goToStep2 = () => {
+const goToStep2 = async () => {
   if (!form.value.name || !form.value.phoneNumber || !form.value.birth || !form.value.gender) {
     alert('모든 정보를 입력해주세요.')
     return
@@ -166,11 +175,82 @@ const goToStep2 = () => {
     alert('생년월일을 올바르게 입력해주세요.')
     return
   }
-  if (!verification.value.isPhoneVerified) {
-    alert('휴대폰 인증을 완료해주세요.')
+  if (!form.value.identityVerificationId) {
+    alert('휴대폰 본인 인증을 먼저 진행해주세요.')
+    return
+  }
+  if (!verification.value.isIdentityVerified) {
+    alert('본인 인증을 완료해주세요.')
     return
   }
   step.value = 2
+}
+
+const verifyIdentity = async () => {
+  try {
+    const identityVerificationId = `identity-verification-${crypto.randomUUID()}`
+    const portoneResponse = await PortOne.requestIdentityVerification({
+      storeId: import.meta.env.VITE_PORTONE_STORE_ID,
+      channelKey: import.meta.env.VITE_PORTONE_CHANNEL_KEY,
+      identityVerificationId,
+    })
+    if (portoneResponse.code != null) {
+      alert(`인증 실패: ${portoneResponse.message}`)
+      return
+    }
+
+    const response = await api.verifyIdentity(identityVerificationId)
+    const userInfo = response.data?.userInfo
+    if (!userInfo) {
+      alert('본인 인증 정보가 올바르지 않습니다.')
+      return
+    }
+
+    form.value.identityVerificationId = identityVerificationId
+    form.value.name = userInfo.name ?? form.value.name
+    form.value.birth = userInfo.birthDate ?? userInfo.birth ?? form.value.birth
+    form.value.gender =
+      userInfo.gender === 'MALE' ? 'male' : userInfo.gender === 'FEMALE' ? 'female' : form.value.gender
+    form.value.phoneNumber = formatPhoneNumber(
+      userInfo.phoneNumber ?? userInfo.phone_number ?? userInfo.phone ?? form.value.phoneNumber
+    )
+
+    verification.value.isIdentityVerified = true
+    alert('본인 인증이 완료되었습니다. 인증 정보를 확인해주세요.')
+  } catch (error) {
+    verification.value.isIdentityVerified = false
+    const message = error.response?.data?.message || '본인 인증에 실패했습니다.'
+    alert(message)
+  }
+}
+
+const checkEmailAvailability = async () => {
+  if (!form.value.email) return
+  try {
+    const res = await api.checkEmail(form.value.email)
+    if (!res.data) {
+      alert('이미 사용 중인 이메일입니다.')
+    }
+  } catch (error) {
+    const message = error.response?.data?.message || '이메일 중복 확인에 실패했습니다.'
+    alert(message)
+  }
+}
+
+const checkNicknameAvailability = async () => {
+  if (!form.value.nickname) return
+  try {
+    const res = await api.checkNickname(form.value.nickname)
+    if (!res.data) {
+      errors.value.nickname = '이미 사용 중인 닉네임입니다.'
+      return
+    }
+    errors.value.nickname = ''
+  } catch (error) {
+    errors.value.nickname = ''
+    const message = error.response?.data?.message || '닉네임 중복 확인에 실패했습니다.'
+    alert(message)
+  }
 }
 
 /**
@@ -198,7 +278,17 @@ const handleSignup = async () => {
   }
 
   try {
-    const res = await api.signup(form.value)
+    const payload = {
+      name: form.value.name,
+      phoneNumber: form.value.phoneNumber,
+      birth: form.value.birth,
+      gender: form.value.gender,
+      identityVerificationId: form.value.identityVerificationId,
+      email: form.value.email,
+      password: form.value.password,
+      nickname: form.value.nickname,
+    }
+    const res = await api.signup(payload)
 
     // 성공 시 처리 (HTTP 200, 201 등 2xx 응답)
     // console.log('Signup Response:', res)
@@ -261,6 +351,21 @@ onUnmounted(() => {
       <div class="p-8 space-y-5">
         <div v-if="step === 1" class="space-y-5">
           <div class="space-y-2">
+            <button
+              type="button"
+              @click="verifyIdentity"
+              class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-violet-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <ShieldCheck class="w-5 h-5" />
+              <span>{{ verification.isIdentityVerified ? '본인인증 완료' : '휴대폰 본인인증 시작' }}</span>
+              <Smartphone class="w-5 h-5" />
+            </button>
+            <p v-if="verification.isIdentityVerified" class="text-xs text-emerald-400 ml-1 font-medium">
+              본인인증 완료 (ID: {{ form.identityVerificationId }})
+            </p>
+          </div>
+
+          <div class="space-y-2">
             <label class="block text-xs font-bold text-slate-400 uppercase ml-1">이름</label>
             <div class="relative">
               <input
@@ -275,25 +380,14 @@ onUnmounted(() => {
 
           <div class="space-y-2">
             <label class="block text-xs font-bold text-slate-400 uppercase ml-1">휴대폰 번호</label>
-            <div class="flex gap-2">
-              <input
-                v-model="form.phoneNumber"
-                @input="autoHyphen"
-                type="tel"
-                placeholder="010-0000-0000"
-                maxlength="13"
-                :disabled="verification.isPhoneVerified"
-                class="flex-1 px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all disabled:opacity-50"
-              />
-              <button
-                type="button"
-                @click="requestAuth('phoneNumber')"
-                :disabled="verification.isPhoneVerified"
-                class="px-4 bg-violet-600 text-white text-xs font-bold rounded-xl hover:bg-violet-500 transition-colors whitespace-nowrap min-w-[80px] disabled:bg-emerald-500 disabled:text-white disabled:cursor-default"
-              >
-                {{ verification.isPhoneVerified ? '인증 완료' : '인증번호' }}
-              </button>
-            </div>
+            <input
+              v-model="form.phoneNumber"
+              @input="autoHyphen"
+              type="tel"
+              placeholder="010-0000-0000"
+              maxlength="13"
+              class="w-full px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
+            />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
@@ -357,6 +451,7 @@ onUnmounted(() => {
                 type="email"
                 placeholder="example@tallemalle.com"
                 :disabled="verification.isEmailVerified"
+                @blur="checkEmailAvailability"
                 class="flex-1 px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all disabled:opacity-50"
               />
               <button
@@ -411,10 +506,12 @@ onUnmounted(() => {
                 v-model="form.nickname"
                 type=""
                 placeholder="사용할 닉네임을 입력해주세요"
+                @blur="checkNicknameAvailability"
                 class="w-full px-4 py-3.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
               />
               <CheckCircle2 class="absolute right-4 top-3.5 w-5 h-5 text-slate-500" />
             </div>
+            <p v-if="errors.nickname" class="text-xs text-rose-400 ml-1">{{ errors.nickname }}</p>
           </div>
 
           <div class="pt-2 space-y-3 border-t border-slate-700 mt-2 mb-6">

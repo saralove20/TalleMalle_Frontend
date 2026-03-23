@@ -18,6 +18,18 @@ const signup = async (req) => {
   return await api.post('/driver/signup', req)
 }
 
+const verifyIdentity = async (identityVerificationId) => {
+  return await api.post('/driver/verify-identity', { identityVerificationId })
+}
+
+const checkEmail = async (email) => {
+  return await api.get('/driver/check-email', { params: { email } })
+}
+
+const checkNickname = async (nickname) => {
+  return await api.get('/driver/check-nickname', { params: { nickname } })
+}
+
 const getCallList = async (params = {}) => {
   return await api.get('/call/list', {
     params: { page: 0, size: 20, ...params },
@@ -72,4 +84,19 @@ const getSettlement = async (callIdx) => {
   return await api.get(`/call/settlement/${callIdx}`)
 }
 
-export default { getCallList, getCallDetail, getMyCall, acceptCall, cancelCall, startDriving, completeCall, getCallHistory, getSettlement, login, signup }
+export default {
+  getCallList,
+  getCallDetail,
+  getMyCall,
+  acceptCall,
+  cancelCall,
+  startDriving,
+  completeCall,
+  getCallHistory,
+  getSettlement,
+  login,
+  signup,
+  verifyIdentity,
+  checkEmail,
+  checkNickname,
+}

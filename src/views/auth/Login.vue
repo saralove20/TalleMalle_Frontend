@@ -12,6 +12,7 @@ import AuthBaseInput from '../../components/auth/AuthBaseInput.vue'
 import AuthLayout from '@/components/auth/AuthLayout.vue'
 import SocialLogin from '@/components/login/SocialLogin.vue'
 import api from '@/api/user'
+import profileApi from '@/api/profile'
 
 /**
  * ==============================================================================
@@ -64,7 +65,8 @@ const passwordRules = () => {
   }
 
   if (!(hasLowerLetter && hasNumber && hasSpecial)) {
-    loginInputError.password.errorMessage = '비밀번호는 영문 소문자, 숫자, 특수문자를 모두 포함해야합니다.'
+    loginInputError.password.errorMessage =
+      '비밀번호는 영문 소문자, 숫자, 특수문자를 모두 포함해야합니다.'
     loginInputError.password.isValid = false
     return
   }
@@ -94,20 +96,23 @@ const handleLogin = async () => {
 
     // 성공 시 처리 (200 OK)
     authStore.login(res.data)
-    console.log("로그인 시 authStore 유저 정보", authStore.user)
+    console.log('로그인 시 authStore 유저 정보', authStore.user)
+
+    const profileRes = await profileApi.profile()
+    authStore.updateUser(profileRes.data.result)
 
     alert('로그인되었습니다.')
     router.push('/main')
-
   } catch (error) {
     // 실패 시 처리 (401 등 모든 에러)
     // console.error('로그인 실패:', error)
-    
+
     // 아이디/비번 불일치 또는 서버 에러 처리
-    const message = error.response?.status === 401 
-      ? '아이디와 비밀번호를 확인해보세요.' 
-      : '로그인 중 오류가 발생했습니다.'
-    
+    const message =
+      error.response?.status === 401
+        ? '아이디와 비밀번호를 확인해보세요.'
+        : '로그인 중 오류가 발생했습니다.'
+
     alert(message)
   }
 }

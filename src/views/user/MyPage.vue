@@ -4,8 +4,8 @@
  * 1. IMPORTS (라이브러리 -> 스토어/API/Composable -> 컴포넌트)
  * ==============================================================================
  */
-import { ref, reactive, onMounted, nextTick, watch } from 'vue'
-import { UserMinus } from 'lucide-vue-next'
+import { ref, reactive, onMounted, nextTick, watch, computed } from 'vue'
+import { UserMinus, History, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/profile'
@@ -13,10 +13,8 @@ import RoundBox from '@/components/layout/RoundBox.vue'
 import ManagePayment from '@/components/modal/ManagePayment.vue'
 import EditProfile from '@/components/modal/EditProfile.vue'
 import HistoryEntry from '@/components/entry/HistoryEntry.vue'
-import ReviewEntry from '@/components/entry/ReviewEntry.vue'
 import PaymentList from '@/components/list/PaymentList.vue'
 import HistoryDetail from '@/components/modal/HistoryDetail.vue'
-import ReviewDetail from '@/components/modal/ReviewDetail.vue'
 import LimitReached from '@/components/modal/LimitReached.vue'
 import WithdrawConfirm from '@/components/modal/WithdrawConfirm.vue'
 
@@ -33,40 +31,26 @@ const router = useRouter()
  * 3. STATE & REFS (상태 변수 선언) - [변수]
  * ==============================================================================
  */
-const activeTab = ref('history') // 'history' | 'reviews'
-
 // 모달 상태 관리
 const activeModal = ref('none')
 
-// 선택된 데이터 상태
-const currentHistory = ref({})
-const currentReview = ref({})
+// 데이터 상태 (컴포넌트 로컬 관리)
+const rideHistoryList = ref([]) // 탑승 기록 리스트
+const currentHistory = ref({}) // 상세 보기용 선택된 기록
+
+// 선택된 결제 데이터 상태
 const selectedPayment = ref(null)
 const paymentListRef = ref(null) // 결제 수단 목록 Ref
-
-// 스크롤 상태 감지 로직용 Ref 및 상태
-const historyScrollRef = ref(null)
-const reviewScrollRef = ref(null)
-const scrollState = reactive({
-  history: { top: false, bottom: false },
-  reviews: { top: false, bottom: false },
-})
 
 /**
  * ==============================================================================
  * 4. COMPUTED (계산된 속성)
  * ==============================================================================
  */
-// 탭 전환 및 데이터 변경 감지 워처 (스크롤 상태 계산)
-watch(
-  [activeTab, () => authStore.history, () => authStore.review],
-  async () => {
-    await nextTick()
-    if (activeTab.value === 'history') checkScroll(historyScrollRef.value, 'history')
-    else checkScroll(reviewScrollRef.value, 'reviews')
-  },
-  { deep: true },
-)
+// 최근 5건의 탑승 기록만 반환
+const recentHistory = computed(() => {
+  return (rideHistoryList.value || []).slice(0, 5)
+})
 
 /**
  * ==============================================================================
@@ -74,39 +58,13 @@ watch(
  * ==============================================================================
  */
 
-// 스크롤 위치 확인
-const checkScroll = (el, type) => {
-  if (!el) return
-  const { scrollTop, scrollHeight, clientHeight } = el
-  const canScroll = scrollHeight > clientHeight
-
-  if (canScroll) {
-    scrollState[type].top = scrollTop > 10
-    scrollState[type].bottom = scrollTop + clientHeight < scrollHeight - 10
-  } else {
-    scrollState[type].top = false
-    scrollState[type].bottom = false
-  }
-}
-
-// 탭 전환
-const switchTab = (tab) => {
-  activeTab.value = tab
-}
-
 // 탑승 상세 정보 열기
 const openRideDetail = (id) => {
-  const selected = authStore.history.find((item) => item.id === id)
+  const selected = rideHistoryList.value.find((item) => item.id === id)
   if (selected) {
     currentHistory.value = selected
     handleModal('history-detail')
   }
-}
-
-// 리뷰 상세 열기
-const openMyReview = (item) => {
-  currentReview.value = item
-  handleModal('review-detail')
 }
 
 // 카드 관리 핸들러
@@ -139,24 +97,29 @@ const fetchAllUserInfo = async () => {
   try {
     const results = await Promise.allSettled([
       api.profile(),
-      api.payment(),
-      api.history(),
-      api.review(),
+      api.history()
     ])
 
-    const [profileResult, paymentResult, historyResult, reviewResult] = results
+    const [profileResult, historyResult] = results
 
+    // 1. 프로필 정보 업데이트 (authStore)
     if (profileResult.status === 'fulfilled' && profileResult.value.data?.result) {
       authStore.updateUser(profileResult.value.data.result)
     }
-    if (paymentResult.status === 'fulfilled' && paymentResult.value.data?.result) {
-      authStore.setPayment(paymentResult.value.data.result)
-    }
+
+    // 3. 탑승 기록 업데이트 (컴포넌트 로컬 상태)
     if (historyResult.status === 'fulfilled' && historyResult.value.data?.result) {
-      authStore.setHistory(historyResult.value.data.result)
-    }
-    if (reviewResult.status === 'fulfilled' && reviewResult.value.data?.result) {
-      authStore.setReview(reviewResult.value.data.result)
+      // 백엔드 필드명을 컴포넌트 props명으로 매핑
+      rideHistoryList.value = historyResult.value.data.result.map((item, index) => ({
+        id: item.idx || index,
+        start: item.startPointName,
+        dest: item.destPointName,
+        departure: item.departureTime,
+        arrival: item.arrivalTime, // 도착 시간 매핑 추가
+        cost: item.amount?.toLocaleString() + '원',
+        people: item.currentCapacity || 0,
+        isDone: true
+      }))
     }
   } catch (error) {
     console.error('Critical error during fetchAllData:', error)
@@ -194,7 +157,7 @@ onMounted(async () => {
           <div class="text-right">
             <p class="text-[10px] font-bold text-slate-400 uppercase">누적 동승</p>
             <p class="text-lg font-black text-indigo-600">
-              {{ authStore.history?.length || 0 }}회
+              {{ rideHistoryList?.length || 0 }}회
             </p>
           </div>
           <div class="w-px h-8 bg-slate-200 self-center"></div>
@@ -206,12 +169,12 @@ onMounted(async () => {
       </div>
 
       <!-- 메인 컨테이너 -->
-      <div class="flex-1 overflow-hidden p-8 flex flex-col">
-        <div class="max-w-6xl mx-auto grid grid-cols-12 gap-8 w-full flex-1 min-h-0">
-          <!-- 왼쪽 사이드바 -->
-          <div class="col-span-12 lg:col-span-4 space-y-6 flex flex-col min-h-0">
+      <div class="flex-1 overflow-y-auto p-8 custom-scroll">
+        <div class="max-w-6xl mx-auto grid grid-cols-12 gap-8 w-full">
+          <!-- 왼쪽 사이드바 (프로필) -->
+          <div class="col-span-12 lg:col-span-4 space-y-6">
             <!-- 프로필 카드 -->
-            <RoundBox padding="32px" class="text-center relative overflow-hidden flex-none">
+            <RoundBox padding="32px" class="text-center relative overflow-hidden">
               <div class="absolute top-0 left-0 w-full h-24 bg-slate-50"></div>
               <div class="relative w-28 h-28 mx-auto mb-4 mt-4">
                 <img
@@ -237,7 +200,7 @@ onMounted(async () => {
             </RoundBox>
 
             <!-- 매너 등급 -->
-            <RoundBox padding="28px" class="flex-none">
+            <RoundBox padding="28px">
               <div class="flex justify-between items-start mb-4">
                 <div class="text-left">
                   <span
@@ -252,9 +215,6 @@ onMounted(async () => {
                       </span>
                       <span class="text-sm font-bold text-slate-300">/ 100</span>
                     </div>
-                    <span class="text-xs font-bold text-indigo-400 whitespace-nowrap mb-1">
-                      (상위 5%)
-                    </span>
                   </div>
                 </div>
               </div>
@@ -266,8 +226,7 @@ onMounted(async () => {
               </div>
             </RoundBox>
 
-            <div class="flex-1"></div>
-            <div class="pt-4 flex justify-center mt-auto flex-none">
+            <div class="pt-4 flex justify-center">
               <button
                 @click="handleModal('withdraw-confirm')"
                 class="flex items-center gap-1.5 text-slate-300 hover:text-rose-500 transition-all font-bold text-[11px]"
@@ -278,104 +237,42 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- 오른쪽 섹션 -->
-          <div class="col-span-12 lg:col-span-8 space-y-6 flex flex-col min-h-0">
-            <!-- 분리된 결제 수단 컴포넌트 적용 -->
+          <!-- 오른쪽 섹션 (기록/결제) -->
+          <div class="col-span-12 lg:col-span-8 space-y-6">
+            <!-- 결제 수단 영역 -->
             <PaymentList
               ref="paymentListRef"
               @manage-payment="handleManagePayment"
               @modal="handleModal"
             />
 
-            <!-- 기록/리뷰 탭 영역 -->
-            <RoundBox padding="0" class="overflow-hidden flex flex-col flex-none h-[450px]">
-              <div class="flex border-b border-slate-50 flex-none">
+            <!-- 최근 탑승 기록 영역 (최대 5건) -->
+            <RoundBox padding="32px">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="font-bold text-slate-900 flex items-center gap-2 text-left">
+                  <History class="w-5 h-5 text-indigo-600" /> 최근 탑승 기록
+                </h3>
                 <button
-                  @click="switchTab('history')"
-                  class="flex-1 py-6 text-sm font-bold border-b-2 transition-all"
-                  :class="
-                    activeTab === 'history'
-                      ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
-                      : 'border-transparent text-slate-400 hover:text-slate-600'
-                  "
+                  v-if="rideHistoryList?.length > 5"
+                  class="text-[10px] font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-0.5 transition-colors"
                 >
-                  최근 탑승 기록
-                </button>
-                <button
-                  @click="switchTab('reviews')"
-                  class="flex-1 py-6 text-sm font-bold border-b-2 transition-all"
-                  :class="
-                    activeTab === 'reviews'
-                      ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
-                      : 'border-transparent text-slate-400 hover:text-slate-600'
-                  "
-                >
-                  받은 리뷰
-                  <span class="ml-1 text-[10px] bg-slate-100 px-1.5 py-0.5 rounded-md">
-                    {{ authStore.review?.length || 0 }}
-                  </span>
+                  전체보기 <ChevronRight class="w-3 h-3" />
                 </button>
               </div>
 
-              <div class="relative flex-1 min-h-0">
-                <!-- 탑승 기록 리스트 -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <HistoryEntry
+                  v-for="item in recentHistory"
+                  :key="item.id"
+                  v-bind="item"
+                  @click="openRideDetail(item.id)"
+                />
+                
                 <div
-                  v-if="activeTab === 'history'"
-                  class="h-full relative content-fade-wrapper"
-                  :class="{
-                    'show-top': scrollState.history.top,
-                    'show-bottom': scrollState.history.bottom,
-                  }"
+                  v-if="rideHistoryList?.length === 0"
+                  class="flex items-center justify-center p-8 border-2 border-dashed border-slate-100 rounded-2xl text-slate-300 text-sm font-bold col-span-full"
                 >
-                  <div
-                    ref="historyScrollRef"
-                    @scroll="checkScroll($event.target, 'history')"
-                    class="h-full overflow-y-auto custom-scroll p-6 pb-20 flex flex-col gap-2.5"
-                  >
-                    <HistoryEntry
-                      v-for="item in authStore.history"
-                      :key="item.id"
-                      v-bind="item"
-                      @click="openRideDetail(item.id)"
-                    />
-                    <div
-                      v-if="authStore.history?.length === 0"
-                      class="h-full flex items-center justify-center text-slate-300 text-sm font-medium"
-                    >
-                      기록이 없습니다.
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 받은 리뷰 리스트 -->
-                <div
-                  v-if="activeTab === 'reviews'"
-                  class="h-full relative content-fade-wrapper"
-                  :class="{
-                    'show-top': scrollState.reviews.top,
-                    'show-bottom': scrollState.reviews.bottom,
-                  }"
-                >
-                  <div
-                    ref="reviewScrollRef"
-                    @scroll="checkScroll($event.target, 'reviews')"
-                    class="h-full overflow-y-auto custom-scroll p-8 pb-20"
-                  >
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
-                      <ReviewEntry
-                        v-for="item in authStore.review"
-                        :key="item.id"
-                        :review="item"
-                        @click="openMyReview(item)"
-                      />
-                    </div>
-                    <div
-                      v-if="authStore.review?.length === 0"
-                      class="h-full flex items-center justify-center text-slate-300 text-sm font-medium"
-                    >
-                      리뷰가 없습니다.
-                    </div>
-                  </div>
+                  최근 이용 내역이 없습니다.
                 </div>
               </div>
             </RoundBox>
@@ -400,12 +297,6 @@ onMounted(async () => {
         @modal="handleModal"
       />
 
-      <!-- 리뷰 상세 모달 -->
-      <ReviewDetail
-        v-if="activeModal === 'review-detail' && currentReview"
-        :currentReview="currentReview"
-        @modal="handleModal"
-      />
       <!-- 등록 제한 알림 -->
       <LimitReached v-if="activeModal === 'limit-reached'" @modal="handleModal" />
 
@@ -420,38 +311,15 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.custom-scroll {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
 .custom-scroll::-webkit-scrollbar {
-  display: none;
+  width: 6px;
 }
-.content-fade-wrapper::before,
-.content-fade-wrapper::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 60px;
-  pointer-events: none;
-  z-index: 20;
-  transition: opacity 0.3s ease;
-  opacity: 0;
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
-.content-fade-wrapper::before {
-  top: 0;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
-}
-.content-fade-wrapper::after {
-  bottom: 0;
-  background: linear-gradient(to top, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
-}
-.show-top::before {
-  opacity: 1;
-}
-.show-bottom::after {
-  opacity: 1;
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
 }
 .glass-panel {
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);

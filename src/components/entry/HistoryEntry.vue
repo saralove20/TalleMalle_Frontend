@@ -5,7 +5,7 @@
  * ==============================================================================
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { MapPin, ArrowRight } from 'lucide-vue-next'
+import { MapPin, ArrowRight, CheckCircle2, Clock } from 'lucide-vue-next'
 
 /**
  * ==============================================================================
@@ -84,20 +84,6 @@ const timeLabel = computed(() => {
 
 /**
  * ==============================================================================
- * 5. METHODS - UI INTERACTION (화면 조작) - [기능 함수]
- * ==============================================================================
- */
-// 해당 컴포넌트에는 별도의 UI 조작 함수가 정의되어 있지 않습니다.
-
-/**
- * ==============================================================================
- * 6. METHODS - DATA & NETWORK (데이터 통신 및 소켓) - [연동 API 함수]
- * ==============================================================================
- */
-// 해당 컴포넌트에는 별도의 API 연동 함수가 정의되어 있지 않습니다.
-
-/**
- * ==============================================================================
  * 7. LIFECYCLE (생명주기 훅) - [마운트 관련]
  * ==============================================================================
  */
@@ -115,41 +101,52 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="flex items-center gap-5 p-5 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-3xl transition-all cursor-pointer group"
+    class="flex items-center justify-between p-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl text-white shadow-xl shadow-slate-200 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all group overflow-hidden relative"
   >
-    <!-- 상태 아이콘 -->
-    <div
-      class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
-      :class="isDone ? 'bg-slate-100 text-slate-400' : 'bg-indigo-50 text-indigo-600'"
-    >
-      <MapPin class="w-6 h-6" />
-    </div>
+    <!-- 배경 장식 아이콘 -->
+    <MapPin class="absolute -right-4 -bottom-4 w-24 h-24 text-white/5 rotate-12" />
 
-    <!-- 텍스트 정보 -->
-    <div class="flex-1 min-w-0">
-      <div class="flex justify-between items-start mb-1 gap-2">
-        <p class="text-sm font-bold text-slate-800 truncate text-left">{{ start }} → {{ dest }}</p>
-        <span
-          class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded whitespace-nowrap"
-        >
-          {{ timeLabel }}
-        </span>
+    <div class="flex items-center gap-4 relative z-10 w-full">
+      <!-- 상태 아이콘 -->
+      <div
+        class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all bg-white/10 group-hover:bg-indigo-500/20"
+      >
+        <MapPin class="w-5 h-5 text-indigo-400" />
       </div>
-      <div class="flex items-center gap-3">
-        <p class="text-xs text-slate-400 font-medium">{{ cost }} 결제 · 동승 {{ people }}명</p>
-        <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
-        <p
-          class="text-xs font-bold italic"
-          :class="isDone ? 'text-indigo-500' : 'text-emerald-500'"
-        >
-          {{ isDone ? '정산 완료' : '결제 완료' }}
-        </p>
+
+      <!-- 텍스트 정보 -->
+      <div class="flex-1 min-w-0 text-left">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs font-bold truncate">
+            {{ start }} → {{ dest }}
+          </p>
+          <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+            <Clock class="w-3 h-3" /> {{ timeLabel }}
+          </span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <p class="text-[10px] text-slate-400 font-medium">
+            {{ cost }} 결제 · {{ people }}명 동승
+          </p>
+          <div class="flex items-center gap-1">
+            <span class="w-1 h-1 bg-slate-600 rounded-full"></span>
+            <p
+              class="text-[10px] font-bold"
+              :class="isDone ? 'text-indigo-400' : 'text-emerald-400'"
+            >
+              {{ isDone ? '정산 완료' : '결제 완료' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 화살표 -->
+      <div class="ml-2 bg-white/5 p-2 rounded-xl group-hover:bg-indigo-500/30 transition-all">
+        <ArrowRight class="w-4 h-4 text-slate-400 group-hover:text-white transform group-hover:translate-x-0.5 transition-all" />
       </div>
     </div>
-
-    <!-- 화살표 -->
-    <ArrowRight
-      class="w-5 h-5 text-slate-200 group-hover:text-indigo-600 transform group-hover:translate-x-1 transition-all shrink-0"
-    />
   </div>
 </template>
+
+<style scoped></style>

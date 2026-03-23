@@ -43,11 +43,11 @@ const deleteNotice = async (noticeId) => {
 
 /**
  * 공지사항 전체 목록 조회
- * @param {Object} req - 필터링이나 페이지네이션 관련 파라미터
- * @returns {Promise<Array>} 공지사항 리스트 데이터
+ * @param {Object} config - axios 설정 객체 (params 등을 포함)
+ * @returns {Promise<Object>} 공지사항 Slice 데이터
  */
-const noticeList = async (req) => {
-  const res = await api.get('/notices', req)
+const noticeList = async (config) => {
+  const res = await api.get('/notices', config)
   return res.data
 }
 

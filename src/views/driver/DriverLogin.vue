@@ -13,11 +13,9 @@ import { reactive } from 'vue'
 
 import { useRouter } from 'vue-router'
 
-import { useAuthStore } from '@/stores/driver'
+import { useDriverStore } from '@/stores/driver'
 
 import { Mail, Lock, CarFront } from 'lucide-vue-next'
-
-import SocialLogin from '@/components/login/SocialLogin.vue'
 
 import api from '@/api/driver'
 
@@ -33,7 +31,7 @@ import api from '@/api/driver'
 
 const router = useRouter()
 
-const authStore = useAuthStore()
+const driverStore = useDriverStore()
 
 /**
 
@@ -140,22 +138,24 @@ const handleLogin = async () => {
   try {
     const res = await api.login(loginForm)
 
-    // 성공 시 처리 (200 OK)
+    const payload = res.data?.user ?? res.data
+    if (payload?.role !== 'DRIVER') {
+      alert('드라이버 계정만 로그인할 수 있습니다.')
+      return
+    }
 
-    authStore.login(res.data)
+    driverStore.login(res.data)
 
     alert('로그인되었습니다.')
 
     router.push('/driverpage')
   } catch (error) {
-    // 실패 시 처리 (401 등 모든 에러)
-
-    // 아이디/비번 불일치 또는 서버 에러 처리
-
+    const serverMessage = error.response?.data?.message
     const message =
-      error.response?.status === 401
+      serverMessage ||
+      (error.response?.status === 401
         ? '아이디와 비밀번호를 확인해보세요.'
-        : '로그인 중 오류가 발생했습니다.'
+        : '로그인 중 오류가 발생했습니다.')
 
     alert(message)
   }
@@ -244,7 +244,6 @@ const handleLogin = async () => {
             로그인하기
           </button>
 
-          <SocialLogin />
         </form>
 
         <!-- 푸터 -->

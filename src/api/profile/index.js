@@ -17,18 +17,8 @@ const getPresignedUrl = async (req) => {
 }
 
 // 탑승 기록 조회 API
-const history = async (req) => {
-  return await api.get('/json/history', req)
+const history = async () => {
+  return await api.get('/history', { withCredentials: true })
 }
 
-// 리뷰 데이터 조회 API
-const review = async (req) => {
-  return await api.get('/json/reviews', req)
-}
-
-// 결제 수단 목록 조회 API
-const payment = async (req) => {
-  return await api.get('/json/payment', req)
-}
-
-export default { profile, update, history, review, payment, getPresignedUrl }
+export default { profile, update, history, getPresignedUrl }

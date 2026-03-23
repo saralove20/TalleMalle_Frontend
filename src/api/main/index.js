@@ -10,10 +10,6 @@ import api from '@/plugins/axiosinterceptor'
  * 2. API DEFINITIONS (함수 정의)
  * ==============================================================================
  */
-const getRecruitList = async () => {
-    return await api.get('/recruit')
-}
-
 const registerRecruit = async (data) => {
     return await api.post('/recruit', data)
 }
@@ -36,5 +32,5 @@ const searchRecruits = async (params) => {
  * ==============================================================================
  */
 export default {
-    getRecruitList, registerRecruit, joinRecruit, searchRecruits, leaveRecruit
+    registerRecruit, joinRecruit, searchRecruits, leaveRecruit
 }
