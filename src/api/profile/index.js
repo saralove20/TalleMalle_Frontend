@@ -2,16 +2,16 @@ import api from '@/plugins/axiosinterceptor'
 
 // 프로필 정보 조회 API
 const profile = async () => {
-  return await api.get('/profile/read', { withCredentials: true })
+  return await api.get('/profile', { withCredentials: true })
 }
 
 const update = async (req) => {
-  return await api.post('/profile/update', req, { withCredentials: true })
+  return await api.put('/profile', req, { withCredentials: true })
 }
 
 // Presigned URL 발급 API (백엔드 명세 반영: POST /profile/image/presign)
 const getPresignedUrl = async (req) => {
-  return await api.post('/profile/image/presign', req, {
+  return await api.post('/image/presign', req, {
     withCredentials: true
   })
 }
