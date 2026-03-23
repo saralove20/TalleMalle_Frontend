@@ -187,6 +187,7 @@ const handleJoinChat = async () => {
         driver: { name: '매칭 대기중', car: '-', plate: '-', type: '택시' },
         route: { start: startName, dest: destName, startTime: timeInfo, endTime: '-' },
         payment: { total: 0, mine: 0, status: '결제 대기' },
+        status: recruit.status,
       }
 
       recruitStore.setRideInfo(rideInfoPayload)
