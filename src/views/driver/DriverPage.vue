@@ -6,9 +6,10 @@
  */
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Radio, List, ClipboardList, MapPin } from 'lucide-vue-next'
+import { Radio, List, ClipboardList, MapPin, LogOut } from 'lucide-vue-next'
 import driverApi from '@/api/driver'
 import { useWebSocket } from '@/composables/useWebSocket'
+import { useDriverStore } from '@/stores/driver'
 import taxiImg from '@/assets/images/taxi.png'
 
 // Components
@@ -25,7 +26,8 @@ import DriverCallModal from '@/components/driver/DriverCallModal.vue'
  * ==============================================================================
  */
 const router = useRouter()
-const { connect, sendMessage, isConnected } = useWebSocket()
+const driverStore = useDriverStore()
+const { connect, sendMessage, isConnected, disconnect } = useWebSocket()
 
 /**
  * ==============================================================================
@@ -151,7 +153,7 @@ const applyCallDetail = (d) => {
   if (typeof d.estimatedFare === 'number') currentFare.value = d.estimatedFare
 }
 
-/** 대기 콜 1건을 불러와 모달에 표시 (배차 브로드캐스트 / 콜 받기 버튼 공통) */
+/** 대기 콜 1건을 불러와 모달에 표시 (소켓: 모집 채움 등 — 자동 배차 알림용) */
 const loadLatestWaitingCallAndShowModal = async () => {
   errorMessage.value = ''
   try {
@@ -170,6 +172,59 @@ const loadLatestWaitingCallAndShowModal = async () => {
     const d = unwrapApi(detailRes)
     applyCallDetail(d)
     showCallModal.value = true
+  } catch (_) {
+    showToastError('콜 정보를 불러오지 못했습니다.')
+  }
+}
+
+// 콜 받기: 최신 대기 콜이 아니라 내가 수락한 콜(readmycall) 기준으로 상세 로드 → 픽업 시트(또는 이미 운행 중이면 주행 UI)
+const beginAcceptedCallFlow = async () => {
+  errorMessage.value = ''
+  let accepted = null
+  try {
+    const res = await driverApi.getMyCall()
+    accepted = unwrapApi(res)
+  } catch (_) {
+    accepted = null
+  }
+  if (!accepted?.callIdx) {
+    showToastError('수락한 콜이 없습니다. 콜 목록에서 콜을 수락해 주세요.')
+    router.push('/driver/calls')
+    return
+  }
+  try {
+    const detailRes = await driverApi.getCallDetail(accepted.callIdx)
+    const d = unwrapApi(detailRes)
+    applyCallDetail(d)
+    myCallInfo.value = {
+      callIdx: d.callIdx,
+      startLocation: d.startLocation,
+      endLocation: d.endLocation,
+      recruitIdx: d.recruitIdx,
+    }
+    showCallModal.value = false
+    const st = (d.status || '').toString().toUpperCase()
+    if (st === 'DRIVING') {
+      showPickupSheet.value = false
+      isArrived.value = false
+      isDriving.value = true
+      naviTitle.value = '목적지로 이동 중'
+      naviSub.value = '안전 운전 하세요'
+      if (callInfo.value.path?.length > 0) {
+        if (isConnected.value && currentRecruitIdx.value) {
+          sendMessage(
+            `/app/chat/send/${currentRecruitIdx.value}`,
+            JSON.stringify({
+              type: 'drivingPath',
+              contents: JSON.stringify(callInfo.value.path),
+            }),
+          )
+        }
+        runDriveSimulation(callInfo.value.path)
+      }
+    } else {
+      showPickupSheet.value = true
+    }
   } catch (_) {
     showToastError('콜 정보를 불러오지 못했습니다.')
   }
@@ -355,8 +410,14 @@ const showToastError = (msg) => {
  * 5. METHODS - API & NETWORK (서버 연동 및 소켓)
  * ==============================================================================
  */
-// 하단 「콜 받기」: 최신 대기 콜 조회 후 모달
-const triggerCall = () => loadLatestWaitingCallAndShowModal()
+// 하단 「콜 받기」: 내가 수락한 콜(readmycall) 기준으로 픽업·주행 흐름
+const triggerCall = () => beginAcceptedCallFlow()
+
+const handleDriverLogout = () => {
+  if (!window.confirm('로그아웃 하시겠습니까?')) return
+  disconnect()
+  driverStore.logout()
+}
 
 // 소켓 메시지 핸들러 (/topic/all-calls, /topic/complete)
 const handleSocketMessage = (e) => {
@@ -496,7 +557,7 @@ onUnmounted(() => {
           <div class="relative w-14 h-14 bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 rounded-full flex items-center justify-center shadow-2xl shadow-indigo-500/50 border-4 border-slate-950/80">
             <Radio class="w-6 h-6 text-white" />
           </div>
-          <span class="text-[10px] font-bold text-indigo-400 tracking-wide">콜 받기</span>
+          <span class="text-[10px] font-bold text-indigo-400 tracking-wide">콜 주행</span>
         </button>
 
         <button @click="router.push('/driver/history')"
@@ -505,6 +566,14 @@ onUnmounted(() => {
             <ClipboardList class="w-4 h-4" />
           </div>
           <span class="text-[10px] font-bold tracking-wide">운행 내역</span>
+        </button>
+
+        <button @click="handleDriverLogout"
+          class="flex flex-col items-center gap-1 text-slate-500 hover:text-rose-400 active:scale-90 transition-all px-2 py-1">
+          <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center">
+            <LogOut class="w-4 h-4" />
+          </div>
+          <span class="text-[10px] font-bold tracking-wide">로그아웃</span>
         </button>
       </div>
     </div>
