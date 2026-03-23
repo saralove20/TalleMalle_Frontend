@@ -19,6 +19,14 @@ const props = defineProps({
     type: Array,
     default: () => [], // 데이터가 안 넘어오면 빈 배열로 초기화
   },
+  hasMore: {
+    type: Boolean,
+    default: false,
+  },
+  isLoadingMore: {
+    type: Boolean,
+    default: false,
+  },
   isConnected: {
     type: Boolean,
     default: false, // 기본값은 '연결 안 됨'
@@ -30,7 +38,7 @@ const props = defineProps({
 })
 
 // Emits 정의 (부모에게 보낼 신호)
-const emit = defineEmits(['send-message', 'send-image', 'open-profile', 'exit'])
+const emit = defineEmits(['send-message', 'send-image', 'open-profile', 'exit', 'load-more'])
 
 /**
  * ==============================================================================
@@ -55,6 +63,10 @@ const handleOpenProfile = (userId) => {
 const handleExit = () => {
   emit('exit')
 }
+
+const handleLoadMore = () => {
+  emit('load-more')
+}
 </script>
 
 <template>
@@ -72,7 +84,13 @@ const handleExit = () => {
     <ChatHeader :is-connected="isConnected" :ride-info="rideInfo" @exit="handleExit" />
 
     <!-- 2. 메시지 리스트 (스크롤 영역) -->
-    <MessageList :messages="messages" @open-profile="handleOpenProfile" />
+    <MessageList
+      :messages="messages"
+      :has-more="hasMore"
+      :is-loading-more="isLoadingMore"
+      @open-profile="handleOpenProfile"
+      @load-more="handleLoadMore"
+    />
 
     <!-- 3. 하단 입력창 -->
     <ChatComposer @send-message="handleSendMessage" @send-image="handleSendImage" />

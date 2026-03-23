@@ -18,10 +18,18 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  hasMore: {
+    type: Boolean,
+    default: false,
+  },
+  isLoadingMore: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 // Emits 정의
-const emit = defineEmits(['open-profile'])
+const emit = defineEmits(['open-profile', 'load-more'])
 
 /**
  * ==============================================================================
@@ -30,6 +38,8 @@ const emit = defineEmits(['open-profile'])
  */
 // 스크롤 컨테이너 참조 (Template Ref)
 const chatContainer = ref(null)
+const pendingRestore = ref(null)
+const pendingLength = ref(null)
 
 /**
  * ==============================================================================
@@ -43,6 +53,20 @@ const scrollToBottom = async () => {
 
   if (chatContainer.value) {
     chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+  }
+}
+
+const handleScroll = () => {
+  if (!chatContainer.value) return
+  if (!props.hasMore || props.isLoadingMore) return
+
+  if (chatContainer.value.scrollTop <= 0) {
+    pendingRestore.value = {
+      scrollHeight: chatContainer.value.scrollHeight,
+      scrollTop: chatContainer.value.scrollTop,
+    }
+    pendingLength.value = props.messages.length
+    emit('load-more')
   }
 }
 
@@ -60,9 +84,30 @@ const handleOpenProfile = (userId) => {
 watch(
   () => props.messages,
   () => {
+    if (pendingRestore.value && chatContainer.value) {
+      const prev = pendingRestore.value
+      pendingRestore.value = null
+      pendingLength.value = null
+      nextTick(() => {
+        if (!chatContainer.value) return
+        const newHeight = chatContainer.value.scrollHeight
+        chatContainer.value.scrollTop = newHeight - prev.scrollHeight + prev.scrollTop
+      })
+      return
+    }
     scrollToBottom()
   },
   { deep: true, flush: 'post' },
+)
+
+watch(
+  () => props.isLoadingMore,
+  (loading) => {
+    if (!loading && pendingRestore.value && pendingLength.value === props.messages.length) {
+      pendingRestore.value = null
+      pendingLength.value = null
+    }
+  },
 )
 
 onMounted(() => {
@@ -76,7 +121,14 @@ onMounted(() => {
       - ref="chatContainer": 스크립트 제어용
       - custom-scroll: 커스텀 스크롤바 CSS 클래스
     -->
-  <div ref="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scroll pb-24 md:pb-6">
+  <div
+    ref="chatContainer"
+    class="flex-1 overflow-y-auto p-6 space-y-6 custom-scroll pb-24 md:pb-6"
+    @scroll="handleScroll"
+  >
+    <div v-if="isLoadingMore" class="text-center text-xs text-slate-400">
+      이전 메시지 불러오는 중...
+    </div>
     <!-- 메시지 반복 렌더링 -->
     <MessageItem
       v-for="msg in messages"
