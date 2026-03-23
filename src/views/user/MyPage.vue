@@ -4,8 +4,8 @@
  * 1. IMPORTS (라이브러리 -> 스토어/API/Composable -> 컴포넌트)
  * ==============================================================================
  */
-import { ref, reactive, onMounted, nextTick, watch } from 'vue'
-import { UserMinus, History } from 'lucide-vue-next'
+import { ref, reactive, onMounted, nextTick, watch, computed } from 'vue'
+import { UserMinus, History, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/profile'
@@ -34,10 +34,23 @@ const router = useRouter()
 // 모달 상태 관리
 const activeModal = ref('none')
 
-// 선택된 데이터 상태
-const currentHistory = ref({})
+// 데이터 상태 (컴포넌트 로컬 관리)
+const rideHistoryList = ref([]) // 탑승 기록 리스트
+const currentHistory = ref({}) // 상세 보기용 선택된 기록
+
+// 선택된 결제 데이터 상태
 const selectedPayment = ref(null)
 const paymentListRef = ref(null) // 결제 수단 목록 Ref
+
+/**
+ * ==============================================================================
+ * 4. COMPUTED (계산된 속성)
+ * ==============================================================================
+ */
+// 최근 5건의 탑승 기록만 반환
+const recentHistory = computed(() => {
+  return (rideHistoryList.value || []).slice(0, 5)
+})
 
 /**
  * ==============================================================================
@@ -47,7 +60,7 @@ const paymentListRef = ref(null) // 결제 수단 목록 Ref
 
 // 탑승 상세 정보 열기
 const openRideDetail = (id) => {
-  const selected = authStore.history.find((item) => item.id === id)
+  const selected = rideHistoryList.value.find((item) => item.id === id)
   if (selected) {
     currentHistory.value = selected
     handleModal('history-detail')
@@ -84,20 +97,29 @@ const fetchAllUserInfo = async () => {
   try {
     const results = await Promise.allSettled([
       api.profile(),
-      api.payment(),
       api.history()
     ])
 
-    const [profileResult, paymentResult, historyResult] = results
+    const [profileResult, historyResult] = results
 
+    // 1. 프로필 정보 업데이트 (authStore)
     if (profileResult.status === 'fulfilled' && profileResult.value.data?.result) {
       authStore.updateUser(profileResult.value.data.result)
     }
-    if (paymentResult.status === 'fulfilled' && paymentResult.value.data?.result) {
-      authStore.setPayment(paymentResult.value.data.result)
-    }
+
+    // 3. 탑승 기록 업데이트 (컴포넌트 로컬 상태)
     if (historyResult.status === 'fulfilled' && historyResult.value.data?.result) {
-      authStore.setHistory(historyResult.value.data.result)
+      // 백엔드 필드명을 컴포넌트 props명으로 매핑
+      rideHistoryList.value = historyResult.value.data.result.map((item, index) => ({
+        id: item.idx || index,
+        start: item.startPointName,
+        dest: item.destPointName,
+        departure: item.departureTime,
+        arrival: item.arrivalTime, // 도착 시간 매핑 추가
+        cost: item.amount?.toLocaleString() + '원',
+        people: item.currentCapacity || 0,
+        isDone: true
+      }))
     }
   } catch (error) {
     console.error('Critical error during fetchAllData:', error)
@@ -135,7 +157,7 @@ onMounted(async () => {
           <div class="text-right">
             <p class="text-[10px] font-bold text-slate-400 uppercase">누적 동승</p>
             <p class="text-lg font-black text-indigo-600">
-              {{ authStore.history?.length || 0 }}회
+              {{ rideHistoryList?.length || 0 }}회
             </p>
           </div>
           <div class="w-px h-8 bg-slate-200 self-center"></div>
@@ -224,24 +246,30 @@ onMounted(async () => {
               @modal="handleModal"
             />
 
-            <!-- 최근 탑승 기록 영역 -->
+            <!-- 최근 탑승 기록 영역 (최대 5건) -->
             <RoundBox padding="32px">
               <div class="flex items-center justify-between mb-6">
                 <h3 class="font-bold text-slate-900 flex items-center gap-2 text-left">
                   <History class="w-5 h-5 text-indigo-600" /> 최근 탑승 기록
                 </h3>
+                <button
+                  v-if="rideHistoryList?.length > 5"
+                  class="text-[10px] font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-0.5 transition-colors"
+                >
+                  전체보기 <ChevronRight class="w-3 h-3" />
+                </button>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <HistoryEntry
-                  v-for="item in authStore.history"
+                  v-for="item in recentHistory"
                   :key="item.id"
                   v-bind="item"
                   @click="openRideDetail(item.id)"
                 />
                 
                 <div
-                  v-if="authStore.history?.length === 0"
+                  v-if="rideHistoryList?.length === 0"
                   class="flex items-center justify-center p-8 border-2 border-dashed border-slate-100 rounded-2xl text-slate-300 text-sm font-bold col-span-full"
                 >
                   최근 이용 내역이 없습니다.
