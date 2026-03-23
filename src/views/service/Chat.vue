@@ -57,6 +57,10 @@ const myUserImg = ref('')
 const messages = ref([]) // 채팅 메시지 목록
 const usersData = ref({}) // 참여자 정보 (User Map)
 const rideInfo = ref(null) // 여정 정보
+const isLoadingMore = ref(false)
+const hasMore = ref(true)
+const oldestCursor = ref(null)
+const PAGE_SIZE = 30
 
 // UI 상태
 const isLoading = ref(false)
@@ -371,7 +375,7 @@ const fetchInitialData = async () => {
 
     // API 병렬 호출 (부분 실패 허용)
     const [historyResult, participantsResult, rideDetailResult] = await Promise.allSettled([
-      roomId.value ? api.getChatHistory(roomId.value) : Promise.resolve([]),
+      roomId.value ? api.getChatHistory(roomId.value, { size: PAGE_SIZE }) : Promise.resolve([]),
       roomId.value ? api.getChatParticipants(roomId.value) : Promise.resolve([]),
       !storeRideInfo && roomId.value ? api.getRideDetail(roomId.value) : Promise.resolve(null),
     ])
@@ -389,6 +393,8 @@ const fetchInitialData = async () => {
       }
       const historyList = historyData?.result ?? historyData ?? []
       messages.value = historyList.map(normalizeHistoryMessage).filter(Boolean)
+      oldestCursor.value = historyList.length ? historyList[0]?.idx ?? null : null
+      hasMore.value = historyList.length === PAGE_SIZE
     } else {
       const status = historyResult.reason?.response?.status
       if (status === 404) {
@@ -486,6 +492,30 @@ const fetchInitialData = async () => {
     }
   } finally {
     isLoading.value = false
+  }
+}
+
+const loadOlderMessages = async () => {
+  if (!roomId.value || isLoadingMore.value || !hasMore.value || !oldestCursor.value) return
+  isLoadingMore.value = true
+  try {
+    const res = await api.getChatHistory(roomId.value, {
+      before: oldestCursor.value,
+      size: PAGE_SIZE,
+    })
+    const historyList = res?.result ?? res ?? []
+    if (!Array.isArray(historyList) || historyList.length === 0) {
+      hasMore.value = false
+      return
+    }
+    const normalized = historyList.map(normalizeHistoryMessage).filter(Boolean)
+    messages.value = [...normalized, ...messages.value]
+    oldestCursor.value = historyList[0]?.idx ?? oldestCursor.value
+    if (historyList.length < PAGE_SIZE) {
+      hasMore.value = false
+    }
+  } finally {
+    isLoadingMore.value = false
   }
 }
 
@@ -725,6 +755,9 @@ watch(
     }
 
     messages.value = []
+    hasMore.value = true
+    oldestCursor.value = null
+    isLoadingMore.value = false
     await fetchInitialData()
     connectWebSocket()
   },
@@ -752,12 +785,15 @@ onUnmounted(() => {
       <ChatPanel
         v-else
         :messages="messages"
+        :has-more="hasMore"
+        :is-loading-more="isLoadingMore"
         :ride-info="rideInfo"
         :is-connected="isConnected"
         @send-message="handleSendMessage"
         @send-image="handleSendImage"
         @open-profile="handleOpenProfile"
         @exit="handleExitRecruit"
+        @load-more="loadOlderMessages"
       />
 
       <RideSidebar
