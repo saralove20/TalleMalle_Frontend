@@ -214,6 +214,8 @@ const mapRecruitToRideInfo = (payload) => {
 
   const status = getRecruitStatus(data)
   const driverName = getDriverName(data)
+  const totalFare = Number(data.estimatedFare ?? data.estimated_fare ?? 0)
+  const myFare = Number(data.myFare ?? data.my_fare ?? 0)
   const isMatching = ['RECRUITING', 'FULL', 'CALLING'].includes(status)
   const isDriven = ['DRIVING', 'END'].includes(status)
 
@@ -232,8 +234,8 @@ const mapRecruitToRideInfo = (payload) => {
     },
     payment: {
       status: '예상',
-      total: 0,
-      mine: 0,
+      total: Number.isFinite(totalFare) ? totalFare : 0,
+      mine: Number.isFinite(myFare) ? myFare : 0,
     },
     status,
   }
