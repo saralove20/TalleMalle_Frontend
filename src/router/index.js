@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useDriverStore } from '@/stores/driver'
 import { useRecruitStore } from '@/stores/recruit'
 import userApi from '@/api/user'
 import Main from '@/views/service/Main.vue'
@@ -149,31 +150,31 @@ const router = createRouter({
       path: '/driverpage',
       name: 'driverpage',
       component: DriverPage,
-      meta: { hideDriverNavbar: false },
+      meta: { hideDriverNavbar: false, requiresDriver: true },
     },
     {
       path: '/driver/calls',
       name: 'driverCallList',
       component: DriverCallList,
-      meta: { hideDriverNavbar: false, requiresAuth: true },
+      meta: { hideDriverNavbar: false, requiresDriver: true },
     },
     {
       path: '/driver/call/:id',
       name: 'driverCallDetail',
       component: DriverCallDetail,
-      meta: { hideDriverNavbar: false, requiresAuth: true },
+      meta: { hideDriverNavbar: false, requiresDriver: true },
     },
     {
       path: '/driver/history',
       name: 'driverCallHistory',
       component: DriverCallHistory,
-      meta: { hideDriverNavbar: false, requiresAuth: true },
+      meta: { hideDriverNavbar: false, requiresDriver: true },
     },
     {
       path: '/driver/settlement/:callIdx',
       name: 'driverSettlement',
       component: DriverSettlement,
-      meta: { hideDriverNavbar: true },
+      meta: { hideDriverNavbar: true, requiresDriver: true },
     },
     // 잘못된 주소로 접속하면 다른 페이지로 리다이렉트 아래 둘 중 하나 선택
     // 1. 메인으로 가게 처리
@@ -194,45 +195,48 @@ const router = createRouter({
 // 네비게이션 가드
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+  const driverStore = useDriverStore()
   const recruitStore = useRecruitStore()
 
-  // 1. 인증 복구 로직 (새로고침 대응)
-  // 스토어에 유저가 없는데 토큰(인증 쿠키)이 있을 가능성이 있는 경우
-  // 유저 정보가 없고, 로그인이 필요한 페이지로 이동할 때만 1회 호출
+  // 드라이버 전용 라우트: 승객용 /user/me 를 호출하지 않음 (드라이버 JWT면 401 → 인증 복구 실패)
+  if (to.meta.requiresDriver) {
+    if (!driverStore.driver) {
+      alert('드라이버 로그인이 필요한 서비스입니다.')
+      return next('/driverlogin')
+    }
+    return next()
+  }
+
+  // 1. 인증 복구 로직 (새로고침 대응) — 일반 회원(승객) 라우트만
   if (!authStore.user && to.meta.requiresAuth) {
     try {
-      // 서버에 내 정보 요청 (App.vue에서 하던 역할을 여기서 먼저 수행)
       const res = await userApi.getMe()
       if (res.data) {
         authStore.login(res.data)
         console.log('새로고침 시 authStore 유저정보', authStore.user)
       }
     } catch (error) {
-      // 인증 실패 시 (토큰 만료 등)
       console.error('인증 복구 실패:', error)
-      // 토큰 만료 등의 사유로 실패 시 스토어 초기화
-      authStore.logout()
+      // 드라이버만 로그인된 상태에서는 ATOKEN이 드라이버용이라 /me 가 401 → 전체 로그아웃하면 안 됨
+      if (!driverStore.driver) {
+        authStore.logout()
+      }
     }
   }
 
-  // 2. 로그인 체크 (requiresAuth)
   if (to.meta.requiresAuth && !authStore.user) {
     alert('로그인이 필요한 서비스입니다.')
-    next('/login')
-  } else {
-    return next()
+    return next('/login')
   }
 
-  // 참여 상태 체크
   if (to.meta.requiresActiveStatus) {
     if (recruitStore.status === 'IDLE') {
       alert('참여 중인 채팅방이 없습니다.')
-      next('/') // 메인으로 강제 이동
-      return
+      return next('/')
     }
   }
 
-  next()
+  return next()
 })
 
 export default router
