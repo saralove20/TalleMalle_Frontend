@@ -26,6 +26,11 @@ const activeFaq = ref(null) // 열려있는 FAQ 아이템의 인덱스
 const noticeList = ref([]) // 공지사항 목록 데이터
 const faqs = ref([]) // FAQ 목록 데이터
 
+// 페이징 관련 상태
+const page = ref(0)
+const isLast = ref(false)
+const isLoading = ref(false)
+
 /**
  * 권한 체크: 글쓰기 버튼 노출 여부
  * (현재는 테스트를 위해 무조건 true를 반환하도록 주석 처리)
@@ -63,13 +68,46 @@ const toggleFaq = (index) => {
 /**
  * 공지사항 데이터 로드
  */
-const getNoticeList = async () => {
+const getNoticeList = async (isMore = false) => {
+  if (isLoading.value) return
+  
+  if (!isMore) {
+    page.value = 0
+    // noticeList.value = [] // 필요 시 주석 해제 (첫 로드 시 기존 목록 비우기)
+  }
+  
+  isLoading.value = true
+
   try {
-    const res = await api.noticeList()
-    noticeList.value = res || []
+    const res = await api.noticeList({
+      params: {
+        page: page.value,
+        size: 10,
+      },
+    })
+
+    if (isMore) {
+      noticeList.value = [...noticeList.value, ...(res.content || [])]
+    } else {
+      noticeList.value = res.content || []
+    }
+
+    isLast.value = res.last
     console.log('공지사항 목록 조회 성공: ', res)
   } catch (error) {
     console.error('공지사항을 불러오는 중 오류 발생:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+/**
+ * 더 보기 클릭 시 호출
+ */
+const loadMoreNotice = () => {
+  if (!isLast.value && !isLoading.value) {
+    page.value += 1
+    getNoticeList(true)
   }
 }
 
@@ -91,7 +129,7 @@ const getFaqList = async () => {
  * ==============================================================================
  */
 onMounted(() => {
-  getNoticeList()
+  getNoticeList(false)
   getFaqList()
 })
 </script>
@@ -127,10 +165,21 @@ onMounted(() => {
               v-if="activeTab === 'notice'"
               class="tab-content flex-1 overflow-y-auto custom-scroll p-8 space-y-4"
             >
-              <div v-if="noticeList.length === 0" class="py-20 text-center text-slate-400">
+              <div v-if="noticeList.length === 0 && !isLoading" class="py-20 text-center text-slate-400">
                 등록된 공지사항이 없습니다.
               </div>
-              <NoticeCard v-for="item in noticeList" :key="item.id" :item="item" />
+              <NoticeCard v-for="item in noticeList" :key="item.idx" :item="item" />
+
+              <!-- 더 보기 버튼 -->
+              <div v-if="!isLast && noticeList.length > 0" class="pt-4 flex justify-center">
+                <button
+                  @click="loadMoreNotice"
+                  :disabled="isLoading"
+                  class="px-8 py-3 rounded-2xl bg-slate-50 text-slate-500 text-sm font-semibold hover:bg-slate-100 transition-colors disabled:opacity-50"
+                >
+                  {{ isLoading ? '로딩 중...' : '공지사항 더 보기' }}
+                </button>
+              </div>
             </div>
 
             <div

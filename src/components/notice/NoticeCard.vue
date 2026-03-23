@@ -36,18 +36,17 @@ const formatDate = (date) => {
   return dayjs(date).tz('Asia/Seoul').format('YYYY.MM.DD')
 }
 
-// 태그별 스타일 매핑 객체
-const tagStyles = {
-  공지: 'bg-yellow-50 text-yellow-600 border border-yellow-100',
-  업데이트: 'bg-blue-50 text-blue-600 border border-blue-100',
-  이벤트: 'bg-purple-50 text-purple-600 border border-purple-100',
-  점검: 'bg-orange-50 text-orange-600 border border-orange-100',
-  긴급: 'bg-red-50 text-red-600 border border-red-100',
+// 태그별 스타일 및 텍스트 매핑 객체
+const tagMap = {
+  NOTICE: { label: '공지', class: 'bg-yellow-50 text-yellow-600 border border-yellow-100' },
+  UPDATE: { label: '업데이트', class: 'bg-blue-50 text-blue-600 border border-blue-100' },
+  EVENT: { label: '이벤트', class: 'bg-purple-50 text-purple-600 border border-purple-100' },
+  SYSTEM: { label: '시스템', class: 'bg-orange-50 text-orange-600 border border-orange-100' },
+  EMERGENCY: { label: '긴급', class: 'bg-red-50 text-red-600 border border-red-100' },
 }
 
-const getTagClass = computed(() => {
-  // 매핑된 스타일이 있으면 반환, 없으면 기본 인디고 스타일 반환
-  return tagStyles[props.item.tag] || 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+const getTagInfo = computed(() => {
+  return tagMap[props.item.tag] || { label: props.item.tag || '공지', class: 'bg-indigo-50 text-indigo-600 border border-indigo-100' }
 })
 </script>
 
@@ -65,11 +64,11 @@ const getTagClass = computed(() => {
         <div class="flex gap-2">
           <span
             :class="[
-              getTagClass,
+              getTagInfo.class,
               'text-[10px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-sm',
             ]"
           >
-            {{ item.tag || '공지' }}
+            {{ getTagInfo.label }}
           </span>
 
           <span
@@ -88,7 +87,7 @@ const getTagClass = computed(() => {
         </h3>
 
         <span class="flex items-center gap-1.5 text-slate-400 text-[11px]"
-          ><Eye class="w-3 h-3" />조회수 {{ item.views.toLocaleString() }}</span
+          ><Eye class="w-3 h-3" />조회수 {{ item.views?.toLocaleString() || 0 }}</span
         >
       </div>
     </div>
