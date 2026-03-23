@@ -1,8 +1,19 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { MapPin, Navigation, RefreshCw, Car, ArrowLeft } from 'lucide-vue-next'
+import { MapPin, Navigation, RefreshCw, Car, ArrowLeft, Clock } from 'lucide-vue-next'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import driverApi from '@/api/driver'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+const formatDeparture = (iso) => {
+  if (!iso) return null
+  return dayjs(iso).tz('Asia/Seoul').format('M/D HH:mm')
+}
 import { useWebSocket } from '@/composables/useWebSocket'
 
 const router = useRouter()
@@ -145,6 +156,13 @@ onUnmounted(() => {
         <div class="flex items-center gap-3 text-gray-800">
           <MapPin class="w-5 h-5 text-emerald-500 shrink-0" />
           <span class="font-medium text-lg truncate">{{ call.startLocation }}</span>
+        </div>
+        <div
+          v-if="formatDeparture(call.departureTime)"
+          class="mt-2 flex items-center gap-1.5 text-sm text-gray-500"
+        >
+          <Clock class="w-4 h-4 shrink-0 text-gray-400" />
+          <span>출발 {{ formatDeparture(call.departureTime) }}</span>
         </div>
       </li>
     </ul>
