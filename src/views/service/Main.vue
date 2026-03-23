@@ -54,6 +54,12 @@ const visibleRecruitIds = ref([])
 const selectedRecruit = ref(null)
 const displayRoute = ref('경로 미지정')
 
+// 무한 스크롤 및 페이징 관련 변수
+const page = ref(0)
+const size = ref(20)
+const hasMore = ref(true)
+const currentBounds = ref(null)
+
 // UI 상태 (모달, 패널 등)
 const isListPanelOpen = ref(true)
 const isDetailOpen = ref(false)
@@ -214,6 +220,10 @@ const handleCreateSubmit = async (formData) => {
   if (formData.time) {
     const [hours, minutes] = formData.time.split(':')
     targetDate.setHours(Number(hours), Number(minutes), 0, 0)
+
+    if (targetDate < new Date()) {
+      targetDate.setDate(targetDate.getDate() + 1)
+    }
   }
 
   // 세팅한 시간이 지금 시간보다 괴거면 반환 처리
@@ -290,24 +300,20 @@ const syncRecruitStatus = () => {
 
   console.log('현재 유저 상태:', user?.status)
 
-  if (!user || !user.idx) {
+  if (!user || !user.idx || recruitList.value.length === 0) {
     return
   }
 
   const myIdx = user.idx
 
-  // 전체 모집글 리스트를 순회하며 내가 어디 속해있는지 찾기
   for (const room of recruitList.value) {
-    // 방장이면
     if (room.ownerId === myIdx) {
       recruitStore.setOwner(room.id)
       displayRoute.value = `${room.start} → ${room.dest}`
       user.status = 'OWNER'
       return
     }
-
-    // 참여자이면
-    const isParticipant = room.participationList?.some(p => p.userIdx === myIdx || p.useridx === myIdx)
+    const isParticipant = room.participationList?.some(p => p.userIdx === myIdx)
     if (isParticipant) {
       recruitStore.setJoined(room.id)
       displayRoute.value = `${room.start} → ${room.dest}`
@@ -345,21 +351,33 @@ const handleMoveToCurrentLocation = () => mapComponent.value?.panToCurrent()
 // 타이머 변수 선언 (디바운싱용)
 let mapSearchTimeout = null
 
-// 화면 기반 모집글 검색 핸들러
-const handleSearchRecruits = (bounds) => {
-  // 디바운싱: 0.3초 안에 다시 요청이 오면 기존 요청 취소!
-  if (mapSearchTimeout) clearTimeout(mapSearchTimeout)
+const handleSearchRecruits = (bounds, isReset = true) => { // 기본값을 true로 설정
+  if (mapSearchTimeout) clearTimeout(mapSearchTimeout);
 
   mapSearchTimeout = setTimeout(async () => {
+    // 새로운 검색일 때
+    if (isReset) {
+      page.value = 0;
+      hasMore.value = true;
+      currentBounds.value = bounds;
+    }
+
+    // 진행 중이거나 데이터가 없을 때
+    if (isLoading.value || !hasMore.value || !currentBounds.value) return;
+
+    isLoading.value = true;
     try {
-      //  백엔드 API 호출
-      const res = await api.searchRecruits(bounds)
-      const targetData = res.data.result
+      const params = {
+        ...currentBounds.value,
+        page: page.value,
+        size: size.value
+      };
 
-      console.log('📍 [화면 이동] 백엔드에서 불러온 방 목록:', targetData)
+      const res = await api.searchRecruits(params);
+      const { content, last } = res.data.result;
 
-      if (Array.isArray(targetData)) {
-        let mappedData = targetData.map((item) => ({
+      if (Array.isArray(content)) {
+        const mappedData = content.map(item => ({
           ...item,
           id: item.idx,
           start: item.startPointName,
@@ -367,66 +385,31 @@ const handleSearchRecruits = (bounds) => {
           time: formatTime(item.departureTime),
           cur: item.currentCapacity,
           max: item.maxCapacity
-        }))
+        }));
 
-        // 내 방이 화면 밖으로 나가서 잘렸을 경우를 대비해 내 방 정보는 강제 유지
-        if (myRecruitId.value) {
-          const myRoom = recruitList.value.find(r => r.id === myRecruitId.value)
-          // 새로 받아온 데이터(화면 안)에 내 방이 없다면 배열에 끼워 넣기
-          if (myRoom && !mappedData.find(r => r.id === myRoom.id)) {
-            mappedData.push(myRoom)
-          }
+        // 데이터 업데이트
+        if (isReset) {
+          recruitList.value = mappedData;
+          syncRecruitStatus();
+        } else {
+          recruitList.value = [...recruitList.value, ...mappedData];
         }
 
-        // 리스트 갈아끼우기 (watch 발동 -> 상태 재검사 -> 마커 다시 그림)
-        recruitList.value = mappedData.filter((item) => item.startLat && item.startLng)
-
-        console.log('✅ [프론트엔드] 화면에 그려질 최종 방 목록:', recruitList.value)
-      } else {
-        recruitList.value = []
+        hasMore.value = !last;
+        if (!last) page.value++;
       }
-
     } catch (error) {
-      console.error("지도 검색 에러:", error)
+      console.error("검색 에러:", error);
+    } finally {
+      isLoading.value = false;
     }
-  }, 300) // 0.3초 대기
-}
+  }, 300);
+};
 
-// 모집 리스트 조회 (API)
-const fetchRecruits = async () => {
-  isLoading.value = true
-  isError.value = false
-
-  try {
-    // 모집 리스트 조회 후 res에 담아줌
-    const res = await api.getRecruitList()
-
-    // 응답 데이터에서 배열에 담긴 result 담기
-    const targetData = res.data.result;
-
-    if (Array.isArray(targetData)) {
-      const mappedData = targetData.map((item) => ({
-        ...item,
-        id: item.idx,
-        start: item.startPointName,
-        dest: item.destPointName,
-        time: formatTime(item.departureTime),
-        cur: item.currentCapacity,
-        max: item.maxCapacity
-      }))
-
-      recruitList.value = mappedData.filter((item) => item.startLat && item.startLng)
-    } else {
-      recruitList.value = [];
-    }
-
-
-  } catch (error) {
-    console.log('fetchRecruits 에러 : ', error)
-    isError.value = true
-    alert('데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.')
-  } finally {
-    isLoading.value = false
+// 리스트 패널의 무한 스크롤 이벤트를 감지할 핸들러
+const handleLoadMore = () => {
+  if (currentBounds.value) {
+    handleSearchRecruits(currentBounds.value, false)
   }
 }
 
@@ -544,10 +527,6 @@ const handleSocketMessage = (event) => {
  * 7. LIFECYCLE (생명주기 훅)
  * ==============================================================================
  */
-watch(() => recruitList.value, () => {
-  syncRecruitStatus()
-}, { deep: true })
-
 onMounted(async () => {
   // 비로그인 접근 차단
   if (!authStore.user) {
@@ -561,7 +540,8 @@ onMounted(async () => {
   connect(wsUrl, handleSocketMessage, myUseridx)
 
   // 초기 데이터 로드
-  await fetchRecruits()
+  const initialBounds = { swLat: 33.0, swLng: 124.0, neLat: 43.0, neLng: 132.0 }
+  handleSearchRecruits(initialBounds, true)
 
   // 유저의 Status 확인
   syncRecruitStatus()
@@ -602,7 +582,7 @@ onMounted(async () => {
             class="pointer-events-auto h-full shadow-xl z-20 ml-4 rounded-3xl overflow-hidden">
             <RecruitListPanel :recruit-list="displayRecruitList" :is-open="true" :selected-id="selectedRecruit?.id"
               :is-socket-connected="isConnected" @expand="isPanelOpen = true" @select="handleSelectRecruit"
-              @search="handleKeywordSearch" />
+              @search="handleKeywordSearch" @load-more="handleLoadMore" />
           </div>
         </Transition>
 
