@@ -34,9 +34,11 @@ const { recruitId } = storeToRefs(recruitStore)
 const route = useRoute()
 const router = useRouter()
 
-// 하위 컴포넌트(Header, MemberList)에서 내 이름을 쓸 수 있도록 전달
+// 하위 컴포넌트(Header, MemberList)에서 내 이름/이미지를 쓸 수 있도록 전달
 const myUserName = ref('익명')
+const myUserImg = ref('')
 provide('myUserName', myUserName)
+provide('myUserImg', myUserImg)
 
 /**
  * ==============================================================================
@@ -50,7 +52,6 @@ const roomId = ref(null)
 
 // 사용자 정보
 const myUserId = ref(`user_${Math.floor(Math.random() * 1000)}`)
-const myUserImg = ref('')
 
 // 데이터 관련
 const messages = ref([]) // 채팅 메시지 목록
@@ -94,6 +95,14 @@ const formatTime = (date) => {
   const now = date instanceof Date ? date : new Date(date)
   return `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
 }
+
+const resolveProfileImage = (raw) =>
+  raw?.imageUrl ||
+  raw?.profileImageUrl ||
+  raw?.profileImage ||
+  raw?.userImg ||
+  raw?.img ||
+  ''
 
 const getDefaultAvatar = (userId) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId || 'Unknown'}`
@@ -769,7 +778,7 @@ onMounted(async () => {
   if (user.value) {
     myUserId.value = user.value.idx || user.value.id || user.value.userId
     myUserName.value = user.value.nickname || user.value.name || user.value.userName || '익명'
-    myUserImg.value = user.value.img || user.value.profileImage || user.value.userImg || ''
+    myUserImg.value = resolveProfileImage(user.value)
   } else {
     showAccessModal(
       '로그인이 필요합니다',
@@ -789,6 +798,16 @@ onMounted(async () => {
   // 4. 푸시 구독 등록
   registerPushSubscription()
 })
+
+watch(
+  () => user.value,
+  (nextUser) => {
+    if (!nextUser) return
+    myUserName.value = nextUser.nickname || nextUser.name || nextUser.userName || '익명'
+    myUserImg.value = resolveProfileImage(nextUser)
+  },
+  { immediate: true },
+)
 
 watch(
   () => route.params.id,
