@@ -19,7 +19,6 @@ import mainApi from '@/api/main'
 // Components
 import ChatPanel from '@/components/chat/ChatPanel.vue'
 import RideSidebar from '@/components/chat/RideSidebar.vue'
-import ProfileModal from '@/components/chat/ProfileModal.vue'
 import ChatAccessModal from '@/components/chat/ChatAccessModal.vue'
 
 /**
@@ -64,7 +63,6 @@ const PAGE_SIZE = 30
 
 // UI 상태
 const isLoading = ref(false)
-const isProfileModalOpen = ref(false)
 const accessModal = reactive({
   open: false,
   title: '',
@@ -75,20 +73,6 @@ const accessModal = reactive({
 const hasShownWsError = ref(false)
 const accessBlocked = ref(false)
 
-// 프로필 모달 데이터
-const currentProfile = reactive({
-  id: '',
-  name: '',
-  lv: '',
-  img: '',
-  meta: '',
-  bio: '',
-  score: 0,
-  rank: '',
-  stats: { time: 0, silent: 0 },
-  reviews: [],
-  isBlocked: false,
-})
 
 const showAccessModal = (title, message, confirmText, onConfirm) => {
   accessModal.open = true
@@ -111,6 +95,17 @@ const formatTime = (date) => {
   return `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
 }
 
+const getDefaultAvatar = (userId) =>
+  `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId || 'Unknown'}`
+
+const buildUserDisplay = (userId, userName, userImg) => {
+  const fallback = usersData.value?.[userId] || usersData.value?.['Unknown'] || {}
+  return {
+    name: userName || fallback.name || '알수없음',
+    img: userImg || fallback.img || getDefaultAvatar(userId),
+  }
+}
+
 const normalizeHistoryMessage = (item) => {
   if (!item || typeof item !== 'object') return null
 
@@ -121,7 +116,6 @@ const normalizeHistoryMessage = (item) => {
 
   const senderId = item.senderId || item.writerIdx || item.userId
   const senderName = item.senderName || item.writer || item.userName
-  const senderImg = item.senderImg || item.senderImageUrl || item.imageUrl || item.userImg || item.img
   const contents = item.contents || item.text || item.message || item.content
 
   if (!contents) return null
@@ -129,6 +123,20 @@ const normalizeHistoryMessage = (item) => {
   const isMe = String(senderId) === String(myUserId.value)
   const timeSource = item.timestamp || item.createdAt || new Date()
   const messageType = item.type || 'message'
+  const isImageMessage = messageType === 'image'
+  let senderImg =
+    item.senderImg ||
+    item.senderImageUrl ||
+    item.profileImage ||
+    item.profileImageUrl ||
+    item.userImg ||
+    item.img ||
+    item.imageUrl ||
+    item.image_url
+  if (isImageMessage && senderImg && senderImg === contents) {
+    senderImg = null
+  }
+  const displayUser = buildUserDisplay(senderId || 'Unknown', senderName, senderImg)
 
   if (messageType === 'image') {
     return {
@@ -138,7 +146,7 @@ const normalizeHistoryMessage = (item) => {
       userId: senderId || 'Unknown',
       text: contents,
       time: formatTime(timeSource),
-      user: senderName || senderImg ? { name: senderName, img: senderImg } : undefined,
+      user: displayUser,
     }
   }
 
@@ -148,7 +156,7 @@ const normalizeHistoryMessage = (item) => {
     userId: senderId || 'Unknown',
     text: contents,
     time: formatTime(timeSource),
-    user: senderName || senderImg ? { name: senderName, img: senderImg } : undefined,
+    user: displayUser,
   }
 }
 
@@ -376,16 +384,6 @@ const handleSendImage = async (file) => {
   }
 }
 
-// 프로필 모달 열기
-const handleOpenProfile = (userId) => {
-  const data = usersData.value[userId] || usersData.value['Unknown']
-  Object.assign(currentProfile, {
-    id: userId,
-    ...data,
-    isBlocked: false,
-  })
-  isProfileModalOpen.value = true
-}
 
 const handleExitRecruit = async () => {
   if (!roomId.value) return
@@ -679,7 +677,15 @@ const handleSocketMessage = (data) => {
 
     userId = data.senderId || data.userId || data.writerIdx || data.sender || 'Unknown'
     userName = data.senderName || data.userName || data.writer || data.name
-    userImg = data.senderImg || data.senderImageUrl || data.imageUrl || data.userImg || data.img
+    userImg =
+      data.senderImg ||
+      data.senderImageUrl ||
+      data.profileImage ||
+      data.profileImageUrl ||
+      data.userImg ||
+      data.img ||
+      data.imageUrl ||
+      data.image_url
   } else {
     textContent = String(data)
   }
@@ -703,11 +709,15 @@ const handleSocketMessage = (data) => {
   if (String(userId) === String(myUserId.value)) return
 
   // 3. 유저 정보 갱신/등록
+  if (msgType === 'image' && userImg && userImg === textContent) {
+    userImg = null
+  }
+
   if (userId !== 'Unknown' && !usersData.value[userId]) {
     const newUserData = data.user || {}
     usersData.value[userId] = {
       name: userName || '이름 없음',
-      img: userImg || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`,
+      img: userImg || getDefaultAvatar(userId),
       lv: newUserData.lv || 'LV. 1',
       meta: newUserData.meta || '정보 없음',
       bio: newUserData.bio || '안녕하세요!',
@@ -722,12 +732,7 @@ const handleSocketMessage = (data) => {
   if (msgType === 'enter') return
 
   // 6. 메시지 목록 추가
-  const senderInfo = usersData.value[userId] || usersData.value['Unknown']
-  const displayUser = {
-    ...senderInfo,
-    name: userName || senderInfo.name,
-    img: userImg || senderInfo.img,
-  }
+  const displayUser = buildUserDisplay(userId, userName, userImg)
 
   messages.value.push({
     id: Date.now() + Math.random(),
@@ -838,23 +843,12 @@ onUnmounted(() => {
         :is-connected="isConnected"
         @send-message="handleSendMessage"
         @send-image="handleSendImage"
-        @open-profile="handleOpenProfile"
         @exit="handleExitRecruit"
         @load-more="loadOlderMessages"
       />
 
-      <RideSidebar
-        :user-profiles="usersData"
-        :ride-info="rideInfo"
-        @open-profile="handleOpenProfile"
-      />
+      <RideSidebar :user-profiles="usersData" :ride-info="rideInfo" />
     </main>
-
-    <ProfileModal
-      :is-open="isProfileModalOpen"
-      :profile="currentProfile"
-      @close="isProfileModalOpen = false"
-    />
 
     <ChatAccessModal
       :is-open="accessModal.open"

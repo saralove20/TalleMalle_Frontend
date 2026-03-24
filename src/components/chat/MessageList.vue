@@ -29,7 +29,7 @@ const props = defineProps({
 })
 
 // Emits 정의
-const emit = defineEmits(['open-profile', 'load-more'])
+const emit = defineEmits(['load-more'])
 
 /**
  * ==============================================================================
@@ -70,10 +70,6 @@ const handleScroll = () => {
   }
 }
 
-// 프로필 열기 핸들러 (MessageItem -> MessageList -> ChatPanel)
-const handleOpenProfile = (userId) => {
-  emit('open-profile', userId)
-}
 
 /**
  * ==============================================================================
@@ -134,7 +130,6 @@ onMounted(() => {
       v-for="msg in messages"
       :key="msg.id"
       :msg="msg"
-      @open-profile="handleOpenProfile"
     />
   </div>
 </template>

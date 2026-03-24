@@ -13,17 +13,7 @@ const props = defineProps({
 })
 
 // Emits 정의
-const emit = defineEmits(['open-profile'])
-
-/**
- * ==============================================================================
- * 2. METHODS - UI INTERACTION (화면 조작 및 이벤트 처리)
- * ==============================================================================
- */
-// 프로필 클릭 핸들러 (MessageItem -> Parent)
-const handleOpenProfile = (userId) => {
-  emit('open-profile', userId)
-}
+defineEmits([])
 </script>
 
 <template>
@@ -68,8 +58,7 @@ const handleOpenProfile = (userId) => {
   <!-- [NEW] 이미지 메시지 (상대방) -->
   <div v-else-if="msg.type === 'image'" class="flex items-end gap-3">
     <div
-      class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden shrink-0 shadow-sm cursor-pointer hover:scale-105 transition-transform"
-      @click="handleOpenProfile(msg.userId)"
+      class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden shrink-0 shadow-sm"
     >
       <img :src="msg.user?.img || msg.avatar" alt="user" class="w-full h-full object-cover" />
     </div>
@@ -95,8 +84,7 @@ const handleOpenProfile = (userId) => {
     <!-- 프로필 사진 (클릭 가능) -->
     <!-- hover:scale-105: 마우스를 올리면 살짝 커지는 애니메이션 -->
     <div
-      class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden shrink-0 shadow-sm cursor-pointer hover:scale-105 transition-transform"
-      @click="handleOpenProfile(msg.userId)"
+      class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden shrink-0 shadow-sm"
     >
       <!-- 이미지가 없으면 엑박 대신 빈 공간이 나오도록 처리 -->
       <img :src="msg.user?.img || msg.avatar" alt="user" class="w-full h-full object-cover" />
