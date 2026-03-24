@@ -24,18 +24,6 @@ defineProps({
   },
 })
 
-// Emits 정의
-const emit = defineEmits(['open-profile'])
-
-/**
- * ==============================================================================
- * 3. METHODS - UI INTERACTION (화면 조작 및 이벤트 처리)
- * ==============================================================================
- */
-// 프로필 열기 요청 핸들러 (MemberList -> RideSidebar -> ChatView)
-const handleOpenProfile = (userId) => {
-  emit('open-profile', userId)
-}
 </script>
 
 <template>
@@ -52,6 +40,6 @@ const handleOpenProfile = (userId) => {
     <RideInfoCard :ride-info="rideInfo" />
 
     <!-- 2. 멤버 리스트 영역 -->
-    <MemberList :user-profiles="userProfiles" @open-profile="handleOpenProfile" />
+    <MemberList :user-profiles="userProfiles" />
   </aside>
 </template>
