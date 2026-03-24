@@ -160,11 +160,6 @@ onMounted(async () => {
               {{ rideHistoryList?.length || 0 }}회
             </p>
           </div>
-          <div class="w-px h-8 bg-slate-200 self-center"></div>
-          <div class="text-right">
-            <p class="text-[10px] font-bold text-slate-400 uppercase">절약 금액</p>
-            <p class="text-lg font-black text-emerald-600">24.5만</p>
-          </div>
         </div>
       </div>
 
@@ -199,33 +194,6 @@ onMounted(async () => {
               </button>
             </RoundBox>
 
-            <!-- 매너 등급 -->
-            <RoundBox padding="28px">
-              <div class="flex justify-between items-start mb-4">
-                <div class="text-left">
-                  <span
-                    class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1"
-                  >
-                    나의 매너 등급
-                  </span>
-                  <div class="flex items-baseline gap-2">
-                    <div class="flex items-baseline gap-1">
-                      <span class="text-4xl font-black text-indigo-600 tracking-tighter">
-                        {{ authStore.user?.rating || 0 }}
-                      </span>
-                      <span class="text-sm font-bold text-slate-300">/ 100</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-2">
-                <div
-                  class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500"
-                  :style="{ width: (authStore.user?.rating || 0) + '%' }"
-                ></div>
-              </div>
-            </RoundBox>
-
             <div class="pt-4 flex justify-center">
               <button
                 @click="handleModal('withdraw-confirm')"
@@ -246,33 +214,29 @@ onMounted(async () => {
               @modal="handleModal"
             />
 
-            <!-- 최근 탑승 기록 영역 (최대 5건) -->
+            <!-- 탑승 기록 영역 -->
             <RoundBox padding="32px">
               <div class="flex items-center justify-between mb-6">
                 <h3 class="font-bold text-slate-900 flex items-center gap-2 text-left">
-                  <History class="w-5 h-5 text-indigo-600" /> 최근 탑승 기록
+                  <History class="w-5 h-5 text-indigo-600" /> 탑승 기록
                 </h3>
-                <button
-                  v-if="rideHistoryList?.length > 5"
-                  class="text-[10px] font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-0.5 transition-colors"
-                >
-                  전체보기 <ChevronRight class="w-3 h-3" />
-                </button>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <HistoryEntry
-                  v-for="item in recentHistory"
-                  :key="item.id"
-                  v-bind="item"
-                  @click="openRideDetail(item.id)"
-                />
-                
-                <div
-                  v-if="rideHistoryList?.length === 0"
-                  class="flex items-center justify-center p-8 border-2 border-dashed border-slate-100 rounded-2xl text-slate-300 text-sm font-bold col-span-full"
-                >
-                  최근 이용 내역이 없습니다.
+              <div class="max-h-[460px] md:max-h-[240px] overflow-y-auto custom-scroll pr-2">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <HistoryEntry
+                    v-for="item in rideHistoryList"
+                    :key="item.id"
+                    v-bind="item"
+                    @click="openRideDetail(item.id)"
+                  />
+                  
+                  <div
+                    v-if="rideHistoryList?.length === 0"
+                    class="flex items-center justify-center p-8 border-2 border-dashed border-slate-100 rounded-2xl text-slate-300 text-sm font-bold col-span-full"
+                  >
+                    최근 이용 내역이 없습니다.
+                  </div>
                 </div>
               </div>
             </RoundBox>
