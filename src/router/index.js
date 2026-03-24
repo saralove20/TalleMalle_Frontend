@@ -140,13 +140,6 @@ router.beforeEach(async (to, from, next) => {
     return next('/login')
   }
 
-  if (to.meta.requiresActiveStatus) {
-    if (recruitStore.status === 'IDLE') {
-      alert('참여 중인 채팅방이 없습니다.')
-      return next('/')
-    }
-  }
-
   return next()
 })
 

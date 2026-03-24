@@ -20,8 +20,6 @@ const props = defineProps({
   },
 })
 
-// Emits 정의
-const emit = defineEmits(['open-profile'])
 
 // Inject (데이터 주입)
 const myUserName = inject('myUserName', '익명')
@@ -43,10 +41,6 @@ const currentMemberCount = computed(() => {
  * 4. METHODS - UI INTERACTION (화면 조작 및 이벤트 처리)
  * ==============================================================================
  */
-// 프로필 열기 핸들러
-const handleOpenProfile = (id) => {
-  emit('open-profile', id)
-}
 </script>
 
 <template>
@@ -68,8 +62,8 @@ const handleOpenProfile = (id) => {
       <MemberListItem
         :name="myUserName"
         img="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-        sub-text="매너점수 42점"
         :is-me="true"
+        :clickable="false"
       />
 
       <!-- 2. 다른 멤버 리스트 -->
@@ -78,8 +72,7 @@ const handleOpenProfile = (id) => {
           v-if="id !== 'Unknown'"
           :name="profile.name"
           :img="profile.img"
-          sub-text="프로필 보기"
-          @item-click="handleOpenProfile(id)"
+          :clickable="false"
         />
       </template>
     </div>

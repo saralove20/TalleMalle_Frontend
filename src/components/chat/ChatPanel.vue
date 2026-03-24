@@ -38,7 +38,7 @@ const props = defineProps({
 })
 
 // Emits 정의 (부모에게 보낼 신호)
-const emit = defineEmits(['send-message', 'send-image', 'open-profile', 'exit', 'load-more'])
+const emit = defineEmits(['send-message', 'send-image', 'exit', 'load-more'])
 
 /**
  * ==============================================================================
@@ -53,11 +53,6 @@ const handleSendMessage = (text) => {
 // 이미지 전송 핸들러
 const handleSendImage = (imageData) => {
   emit('send-image', imageData)
-}
-
-// 프로필 열기 핸들러 (MessageList -> ChatPanel -> ChatView)
-const handleOpenProfile = (userId) => {
-  emit('open-profile', userId)
 }
 
 const handleExit = () => {
@@ -88,7 +83,6 @@ const handleLoadMore = () => {
       :messages="messages"
       :has-more="hasMore"
       :is-loading-more="isLoadingMore"
-      @open-profile="handleOpenProfile"
       @load-more="handleLoadMore"
     />
 

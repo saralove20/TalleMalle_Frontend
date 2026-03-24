@@ -16,7 +16,11 @@ defineProps({
   },
   subText: {
     type: String,
-    required: true,
+    default: '',
+  },
+  clickable: {
+    type: Boolean,
+    default: true,
   },
   isMe: {
     type: Boolean,
@@ -47,8 +51,8 @@ const handleItemClick = () => {
     -->
   <div
     class="flex items-center gap-3 p-2 rounded-xl -mx-2 transition-colors"
-    :class="isMe ? '' : 'cursor-pointer hover:bg-slate-50'"
-    @click="!isMe && handleItemClick()"
+    :class="!isMe && clickable ? 'cursor-pointer hover:bg-slate-50' : ''"
+    @click="!isMe && clickable && handleItemClick()"
   >
     <!-- 1. 프로필 이미지 -->
     <div
@@ -70,7 +74,11 @@ const handleItemClick = () => {
       </p>
 
       <!-- 서브 텍스트 -->
-      <p class="text-xs" :class="isMe ? 'text-slate-400' : 'text-indigo-500 font-medium italic'">
+      <p
+        v-if="subText"
+        class="text-xs"
+        :class="isMe ? 'text-slate-400' : 'text-indigo-500 font-medium italic'"
+      >
         {{ subText }}
       </p>
     </div>
