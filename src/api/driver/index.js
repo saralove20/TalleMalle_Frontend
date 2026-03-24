@@ -84,6 +84,14 @@ const getSettlement = async (callIdx) => {
   return await api.get(`/call/settlement/${callIdx}`)
 }
 
+/**
+ * 탑승객별 등록 결제수단으로 정산 금액 청구 (드라이버 세션 쿠키)
+ * @param {{ recruitIdx: number, commission: number, serviceFee: number }} body
+ */
+const chargePayment = async (body) => {
+  return await api.post('/payment/charge', body)
+}
+
 export default {
   getCallList,
   getCallDetail,
@@ -94,6 +102,7 @@ export default {
   completeCall,
   getCallHistory,
   getSettlement,
+  chargePayment,
   login,
   signup,
   verifyIdentity,

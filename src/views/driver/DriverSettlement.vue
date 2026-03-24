@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { MapPin, Navigation, Users, Wallet, Phone, CheckCircle } from 'lucide-vue-next'
+import { MapPin, Navigation, Users, Wallet, Phone, CheckCircle, CreditCard } from 'lucide-vue-next'
 import driverApi from '@/api/driver'
 
 const route = useRoute()
@@ -12,7 +12,19 @@ const settlement = ref(null)
 const isLoading = ref(true)
 const error = ref('')
 
+const chargeLoading = ref(false)
+const chargeError = ref('')
+const chargeDone = ref(false)
+
 const participantCount = computed(() => settlement.value?.participants?.length ?? 0)
+
+const canCharge = computed(
+  () =>
+    settlement.value?.recruitIdx != null &&
+    participantCount.value > 0 &&
+    !chargeLoading.value &&
+    !chargeDone.value,
+)
 
 onMounted(async () => {
   try {
@@ -25,6 +37,25 @@ onMounted(async () => {
     isLoading.value = false
   }
 })
+
+async function requestCharge() {
+  if (!canCharge.value) return
+  chargeError.value = ''
+  chargeLoading.value = true
+  try {
+    const total = settlement.value?.totalFare ?? 0
+    await driverApi.chargePayment({
+      recruitIdx: settlement.value.recruitIdx,
+      commission: total,
+      serviceFee: 0,
+    })
+    chargeDone.value = true
+  } catch (e) {
+    chargeError.value = e.response?.data?.message || e.message || '결제에 실패했습니다.'
+  } finally {
+    chargeLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -133,13 +164,30 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- 확인 버튼 -->
-        <button
-          @click="router.push('/driverpage')"
-          class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-base rounded-xl transition-all shadow-sm"
-        >
-          홈으로 돌아가기
-        </button>
+        <p v-if="chargeError" class="text-sm text-red-600 text-center font-medium">{{ chargeError }}</p>
+        <p v-else-if="chargeDone" class="text-sm text-emerald-700 text-center font-semibold">
+          탑승객 결제가 완료되었습니다.
+        </p>
+
+        <!-- 결제 → 홈 -->
+        <div class="space-y-3">
+          <button
+            type="button"
+            :disabled="!canCharge"
+            class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold text-base rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+            @click="requestCharge"
+          >
+            <CreditCard class="w-5 h-5" />
+            {{ chargeLoading ? '결제 처리 중…' : chargeDone ? '결제 완료됨' : '탑승객 결제하기' }}
+          </button>
+          <button
+            type="button"
+            class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-base rounded-xl transition-all shadow-sm"
+            @click="router.push('/driverpage')"
+          >
+            홈으로 돌아가기
+          </button>
+        </div>
       </div>
 
     </div>
