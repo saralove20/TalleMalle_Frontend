@@ -574,6 +574,8 @@ const connectWebSocket = () => {
   stompClient = new Client({
     brokerURL: wsUri,
     reconnectDelay: 3000,
+    heartbeatIncoming: 10000,
+    heartbeatOutgoing: 10000,
     onConnect: () => {
       isConnected.value = true
       stompClient.subscribe(`/topic/chat/${roomId.value}`, (message) => {
