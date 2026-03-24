@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useDriverStore } from '@/stores/driver'
 import { useRecruitStore } from '@/stores/recruit'
 import userApi from '@/api/user'
+import profileApi from '@/api/profile/index.js'
 import Main from '@/views/service/Main.vue'
 import Login from '@/views/auth/Login.vue'
 import SocialLoginSuccess from '@/views/auth/SocialLoginSuccess.vue'
@@ -211,8 +212,10 @@ router.beforeEach(async (to, from, next) => {
   if (!authStore.user && to.meta.requiresAuth) {
     try {
       const res = await userApi.getMe()
+      const profileRes = await profileApi.profile()
       if (res.data) {
         authStore.login(res.data)
+        authStore.updateUser(profileRes.data.result)
         console.log('새로고침 시 authStore 유저정보', authStore.user)
       }
     } catch (error) {
