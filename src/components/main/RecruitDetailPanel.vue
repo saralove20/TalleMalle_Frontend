@@ -54,6 +54,10 @@ const joinButtonState = computed(() => {
         return { text: '동승 채팅방 입장', disabled: false, class: 'bg-slate-900 hover:bg-indigo-600 text-white' }
     }
 
+    if (props.recruit.status === 'DRIVING') {
+        return { text: '🚕 부릉 부릉~', disabled: true, class: 'bg-emerald-500 text-white shadow-emerald-200 cursor-not-allowed' }
+    }
+
     // 내가 다른 방에 있을 때 -> [입장 불가]
     return { text: '다른 모집 참여 중', disabled: true, class: 'bg-slate-300 text-slate-500 cursor-not-allowed' }
 })
