@@ -12,7 +12,7 @@ onMounted(async () => {
     await api.enroll(customerKey, authKey)
     await router.push('/mypage')
   } catch (err) {
-    console.error('등록 실패', err)
+    // console.error('등록 실패', err)
   }
 })
 </script>

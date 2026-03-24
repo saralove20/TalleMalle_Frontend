@@ -81,15 +81,15 @@ const handleImageUpload = async (event) => {
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text()
-      console.error('S3 에러 상세:', errorText)
+      // console.error('S3 에러 상세:', errorText)
       throw new Error(`S3 업로드 실패: ${uploadResponse.status} ${uploadResponse.statusText}`)
     }
 
     // 4. 업로드 완료된 최종 URL을 로컬 상태에 저장
     localProfile.value.imageUrl = publicUrl
-    console.log('이미지 업로드 성공:', publicUrl)
+    // console.log('이미지 업로드 성공:', publicUrl)
   } catch (error) {
-    console.error('이미지 업로드 중 오류 발생:', error)
+    // console.error('이미지 업로드 중 오류 발생:', error)
     alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
     // 실패 시 기존 이미지로 복구
     localProfile.value.imageUrl = authStore.user?.imageUrl
@@ -113,7 +113,7 @@ const handleSave = async () => {
     }
 
     const res = await api.update(updatePayload)
-    console.log('프로필 업데이트 응답:', res.data)
+    // console.log('프로필 업데이트 응답:', res.data)
 
     if (res.status === 200 || res.data?.result) {
       // 서버 응답 데이터가 있으면 사용하고, 없으면 요청했던 데이터 사용
@@ -126,7 +126,7 @@ const handleSave = async () => {
       handleClose()
     }
   } catch (error) {
-    console.error('프로필 수정 중 오류 발생:', error)
+    // console.error('프로필 수정 중 오류 발생:', error)
     alert('저장에 실패했습니다. 다시 시도해주세요.')
   }
 }

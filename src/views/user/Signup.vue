@@ -149,7 +149,7 @@ const handleCertification = async () => {
       alert('본인인증이 완료되었습니다.')
     }
   } catch (error) {
-    console.error('오류 발생:', error)
+    // console.error('오류 발생:', error)
     alert('인증 과정 중 예상치 못한 오류가 발생했습니다.')
   }
 }
@@ -171,7 +171,7 @@ const checkEmailUnique = async () => {
 
   try {
     const res = await api.emailDoubleCheck(form.value.email)
-    console.log(res.data)
+    // console.log(res.data)
 
     // 백엔드에서 true가 오면 사용 가능, false가 오면 중복
     if (res.data === true) {
@@ -185,7 +185,7 @@ const checkEmailUnique = async () => {
       verification.value.isEmailChecked = false
     }
   } catch (error) {
-    console.error('이메일 체크 오류:', error)
+    // console.error('이메일 체크 오류:', error)
     alert('서버 통신 중 오류가 발생했습니다.')
   }
 }
@@ -212,7 +212,7 @@ const checkNicknameUnique = async () => {
       verification.value.isNicknameChecked = false
     }
   } catch (error) {
-    console.error('닉네임 체크 오류:', error)
+    // console.error('닉네임 체크 오류:', error)
     alert('서버 통신 중 오류가 발생했습니다.')
   }
 }

@@ -20,7 +20,7 @@ onMounted(() => {
 
   // [예외 처리] 데이터가 아예 없으면 로그인 페이지로 바로 튕겨냄
   if (!userInfo.email) {
-    console.error('소셜 로그인 정보가 유실되었습니다.')
+    // console.error('소셜 로그인 정보가 유실되었습니다.')
     router.push('/login')
     return
   }

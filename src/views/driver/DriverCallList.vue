@@ -42,7 +42,7 @@ const fetchCalls = async () => {
     calls.value = res.data.content ?? res.data
     showUpdateAlert.value = false 
   } catch (error) {
-    console.error('콜 목록 로드 실패:', error)
+    // console.error('콜 목록 로드 실패:', error)
   } finally {
     isLoading.value = false
   }

@@ -124,10 +124,10 @@ router.beforeEach(async (to, from, next) => {
       if (res.data) {
         authStore.login(res.data)
         authStore.updateUser(profileRes.data.result)
-        console.log('새로고침 시 authStore 유저정보', authStore.user)
+        // console.log('새로고침 시 authStore 유저정보', authStore.user)
       }
     } catch (error) {
-      console.error('인증 복구 실패:', error)
+      // console.error('인증 복구 실패:', error)
       // 드라이버만 로그인된 상태에서는 ATOKEN이 드라이버용이라 /me 가 401 → 전체 로그아웃하면 안 됨
       if (!driverStore.driver) {
         authStore.logout()

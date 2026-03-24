@@ -46,7 +46,7 @@ const fetchHistory = async (append = false) => {
       hasMoreHistory.value = body?.last === false
     }
   } catch (error) {
-    console.error('운행 내역 로드 실패:', error)
+    // console.error('운행 내역 로드 실패:', error)
   } finally {
     isLoading.value = false
   }

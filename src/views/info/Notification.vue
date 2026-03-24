@@ -96,7 +96,7 @@ const loadData = async (page = 0) => {
       currentPage.value = page
     }
   } catch (error) {
-    console.error('알림 데이터 로드 실패:', error)
+    // console.error('알림 데이터 로드 실패:', error)
     isError.value = true
   } finally {
     isLoading.value = false
@@ -105,14 +105,14 @@ const loadData = async (page = 0) => {
 
 const handleReadItem = async (idx) => {
   if (!idx) {
-    console.error('알림 idx가 없습니다!')
+    // console.error('알림 idx가 없습니다!')
     return
   }
   try {
     await notificationApi.readNotification(idx)
     store.markAsRead(idx)
   } catch (error) {
-    console.error('알림 읽음 처리 실패:', error)
+    // console.error('알림 읽음 처리 실패:', error)
   }
 }
 
@@ -121,7 +121,7 @@ const handleMarkAllRead = async () => {
     await notificationApi.readAllNotifications()
     store.markAllAsRead()
   } catch (error) {
-    console.error('모든 알림 읽음 처리 실패:', error)
+    // console.error('모든 알림 읽음 처리 실패:', error)
   }
 }
 

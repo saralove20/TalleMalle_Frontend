@@ -96,7 +96,7 @@ const handleLogin = async () => {
 
     // 성공 시 처리 (200 OK)
     authStore.login(res.data)
-    console.log('로그인 시 authStore 유저 정보', authStore.user)
+    // console.log('로그인 시 authStore 유저 정보', authStore.user)
 
     const profileRes = await profileApi.profile()
     authStore.updateUser(profileRes.data.result)

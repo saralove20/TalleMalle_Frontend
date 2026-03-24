@@ -41,7 +41,7 @@ const handleRecruitPushToggle = async (event) => {
     await pushApi.patchRecruitPromotionPush(wantOn)
     recruitPushConsent.value = wantOn
   } catch (e) {
-    console.error(e)
+    // console.error(e)
     event.target.checked = recruitPushConsent.value
     alert('설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.')
   } finally {

@@ -205,10 +205,10 @@ const handleSignup = async () => {
     alert('회원가입이 완료되었습니다. 로그인해주세요.')
     router.push('/login')
 
-    console.log('가입 데이터:', res.data)
+    // console.log('가입 데이터:', res.data)
   } catch (error) {
     // API 서버에서 오는 400, 500번대 에러는 모두 이쪽으로 들어옵니다.
-    console.error('회원가입 실패:', error)
+    // console.error('회원가입 실패:', error)
     const message = error.response?.data?.message || '회원가입에 실패했습니다. 다시 시도해주세요.'
     alert(message)
   }

@@ -109,7 +109,7 @@ const handleNotificationClick = async (idx) => {
     await notificationApi.readNotification(idx)
     notificationStore.markAsRead(idx)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
   }
 }
 
@@ -234,7 +234,7 @@ const loadInitialNotifications = async () => {
       }
     }
   } catch (error) {
-    console.error('네비게이션 초기 알림 로드 실패:', error)
+    // console.error('네비게이션 초기 알림 로드 실패:', error)
   }
 }
 
@@ -246,10 +246,10 @@ const loadInitialNotifications = async () => {
 const logout = async () => {
   try {
     const res = await userApi.logout()
-    console.log(res.data)
+    // console.log(res.data)
     authStore.logout()
   } catch (error) {
-    console.error(error)
+    // console.error(error)
   }
 }
 
@@ -271,7 +271,7 @@ onMounted(async () => {
       chatStore.setUnreadFromServer(unreadRooms)
     }
   } catch (error) {
-    console.error('채팅 읽지 않은 목록 로드 실패:', error)
+    // console.error('채팅 읽지 않은 목록 로드 실패:', error)
   }
 
   if (navigator.serviceWorker) {

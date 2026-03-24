@@ -4,7 +4,7 @@
  * 1. IMPORTS
  * ==============================================================================
  */
-import { CarFront } from 'lucide-vue-next'
+import { Zap } from 'lucide-vue-next'
 </script>
 
 <template>

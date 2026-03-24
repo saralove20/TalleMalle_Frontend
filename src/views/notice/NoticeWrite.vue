@@ -71,7 +71,7 @@ const fetchDetail = async () => {
       isPinned: data.isPinned || 0,
     }
   } catch (error) {
-    console.error('데이터 로드 실패:', error)
+    // console.error('데이터 로드 실패:', error)
     alert('기존 공지사항 정보를 불러오지 못했습니다.')
   }
 }
@@ -95,7 +95,7 @@ const submitNotice = async () => {
 
     router.push('/notice')
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     alert(isEditMode.value ? '수정 중 오류가 발생했습니다.' : '등록 중 오류가 발생했습니다.')
   }
 }

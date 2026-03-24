@@ -47,7 +47,7 @@ const checkNickname = async () => {
   try {
     // UserController의 nicknameCheck API 호출 (GET /user/signup/check-nickname)
     const available = await api.nicknameDoubleCheck(form.value.nickname)
-    console.log(available)
+    // console.log(available)
     if (available.data) {
       alert('사용 가능한 닉네임입니다.')
       isNicknameChecked.value = true
@@ -86,7 +86,7 @@ const handleExtraSignup = async () => {
     document.cookie = 'ATOKEN=; max-age=0; path=/;'
     router.push('/login')
   } catch (error) {
-    console.error('업데이트 실패:', error)
+    // console.error('업데이트 실패:', error)
     alert(error.response?.data?.message || '정보 업데이트에 실패했습니다.')
   }
 }

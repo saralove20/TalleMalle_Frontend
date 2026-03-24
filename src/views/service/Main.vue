@@ -203,7 +203,7 @@ const handleJoinChat = async () => {
       router.push(`/chat/${recruitIdx}`)
     }
   } catch (error) {
-    console.log("🚨 채팅방 참여 API 에러:", error)
+    // console.log("🚨 채팅방 참여 API 에러:", error)
     alert("참여 중 서버 오류가 발생했습니다. 다시 시도해주세요.")
   }
 
@@ -250,7 +250,7 @@ const handleCreateSubmit = async (formData) => {
   }
 
   try {
-    console.log('백엔드로 전송되는 모집글 데이터:', reqData)
+    // console.log('백엔드로 전송되는 모집글 데이터:', reqData)
     const res = await api.registerRecruit(reqData)
 
     const newRecruit = res.data.result
@@ -267,7 +267,7 @@ const handleCreateSubmit = async (formData) => {
     isCreateModalOpen.value = false
     alert("모집이 시작되었습니다!")
   } catch (error) {
-    console.log("🚨 모집글 등록 에러 발생 : ", error)
+    // console.log("🚨 모집글 등록 에러 발생 : ", error)
     alert("모집글 등록 중 오류가 발생했습니다. 다시 시도해주세요.")
   }
 }
@@ -299,7 +299,7 @@ const handleLeaveRecruit = async () => {
 const syncRecruitStatus = () => {
   const user = authStore.user
 
-  console.log('현재 유저 상태:', user?.status)
+  // console.log('현재 유저 상태:', user?.status)
 
   if (!user || !user.idx || recruitList.value.length === 0) {
     return
@@ -400,7 +400,7 @@ const handleSearchRecruits = (bounds, isReset = true) => { // 기본값을 true�
         if (!last) page.value++;
       }
     } catch (error) {
-      console.error("검색 에러:", error);
+      // console.error("검색 에러:", error);
     } finally {
       isLoading.value = false;
     }
@@ -431,7 +431,7 @@ const handleSocketMessage = (event) => {
       realPayload = data.payload.payload
     }
 
-    console.log(`📩 소켓 수신 완료 (실제 처리 타입: ${realType})`)
+    // console.log(`📩 소켓 수신 완료 (실제 처리 타입: ${realType})`)
 
     // 신규 모집글 등록
     if (realType === 'newRecruit' && realPayload) {
@@ -519,7 +519,7 @@ const handleSocketMessage = (event) => {
     }
 
   } catch (e) {
-    console.error('🚨 소켓 데이터 파싱 에러:', e)
+    // console.error('🚨 소켓 데이터 파싱 에러:', e)
   }
 }
 
@@ -547,7 +547,7 @@ onMounted(async () => {
   // 유저의 Status 확인
   syncRecruitStatus()
 
-  console.log("내 모집글 정보 : " + myRecruitId.value)
+  // console.log("내 모집글 정보 : " + myRecruitId.value)
 
   // 내가 참여/모집 중인 방이 있다면 그곳으로 화면 이동
   if (myRecruitId.value) {
@@ -564,7 +564,7 @@ onMounted(async () => {
     }
   }
 
-  console.log(`현재 상태: ${myStatus.value}, 방 ID: ${myRecruitId.value}`)
+  // console.log(`현재 상태: ${myStatus.value}, 방 ID: ${myRecruitId.value}`)
 })
 </script>
 

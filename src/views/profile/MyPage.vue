@@ -122,7 +122,7 @@ const fetchAllUserInfo = async () => {
       }))
     }
   } catch (error) {
-    console.error('Critical error during fetchAllData:', error)
+    // console.error('Critical error during fetchAllData:', error)
   }
 }
 

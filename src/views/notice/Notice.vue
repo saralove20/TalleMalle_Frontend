@@ -93,9 +93,9 @@ const getNoticeList = async (isMore = false) => {
     }
 
     isLast.value = res.last
-    console.log('공지사항 목록 조회 성공: ', res)
+    // console.log('공지사항 목록 조회 성공: ', res)
   } catch (error) {
-    console.error('공지사항을 불러오는 중 오류 발생:', error)
+    // console.error('공지사항을 불러오는 중 오류 발생:', error)
   } finally {
     isLoading.value = false
   }

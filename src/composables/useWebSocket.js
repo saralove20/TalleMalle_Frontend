@@ -40,7 +40,7 @@ export function useWebSocket() {
             heartbeatOutgoing: 10000,
 
             onConnect: () => {
-                console.log(`✅ STOMP Connected : ${brokerUrl}`)
+                // console.log(`✅ STOMP Connected : ${brokerUrl}`)
                 isConnected.value = true
 
 
@@ -72,7 +72,7 @@ export function useWebSocket() {
 
                         // PUSH_NOTIFICATION 타입인지 확인
                         if (payload.type === 'PUSH_NOTIFICATION' && onMessageCallback) {
-                            console.log('🔔 새로운 개인 알림 도착:', payload)
+                            // console.log('🔔 새로운 개인 알림 도착:', payload)
 
                             // UI 처리를 위해 컴포넌트로 데이터 전달
                             const formattedData = {
@@ -86,13 +86,13 @@ export function useWebSocket() {
             },
             // 에러 발생 시
             onWebSocketError: (error) => {
-                console.error("❌ WebSocket Error : ", error)
+                // console.error("❌ WebSocket Error : ", error)
                 isConnected.value = false
             },
 
             // STOMP 프로토콜 에러 발생 시
             onStompError: (frame) => {
-                console.error('❌ STOMP Error : ', frame.headers['message'])
+                // console.error('❌ STOMP Error : ', frame.headers['message'])
                 isConnected.value = false
             },
 
@@ -115,7 +115,7 @@ export function useWebSocket() {
                 body: JSON.stringify(data)
             })
         } else {
-            console.warn("🚫 STOMP가 연결되지 않아 메시지를 보낼 수 없습니다.")
+            // console.warn("🚫 STOMP가 연결되지 않아 메시지를 보낼 수 없습니다.")
         }
     }
 

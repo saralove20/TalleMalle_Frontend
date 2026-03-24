@@ -58,7 +58,7 @@ const deleteNotice = async () => {
     alert('삭제되었습니다.')
     router.push('/notice')
   } catch (error) {
-    console.error('삭제 실패:', error)
+    // console.error('삭제 실패:', error)
     alert('삭제 중 오류가 발생했습니다.')
   }
 }
@@ -69,7 +69,7 @@ const fetchNoticeDetail = async () => {
     const response = await api.getNoticeDetail(noticeId)
     notice.value = response
   } catch (error) {
-    console.error('상세 내용을 불러오는데 실패했습니다.', error)
+    // console.error('상세 내용을 불러오는데 실패했습니다.', error)
   } finally {
     isLoading.value = false
   }
