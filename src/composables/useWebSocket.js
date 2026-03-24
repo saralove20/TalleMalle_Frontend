@@ -36,6 +36,8 @@ export function useWebSocket() {
         stompClient.value = new Client({
             brokerURL: brokerUrl,
             reconnectDelay: 3000,
+            heartbeatIncoming: 10000,
+            heartbeatOutgoing: 10000,
 
             onConnect: () => {
                 console.log(`✅ STOMP Connected : ${brokerUrl}`)
