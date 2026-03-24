@@ -7,8 +7,8 @@
 import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Mail, Lock, Check, User } from 'lucide-vue-next'
-import AuthBaseInput from '../../../components/auth/AuthBaseInput.vue'
-import AuthLayout from '@/components/auth/AuthLayout.vue'
+import AuthBaseInput from '@/components/user/AuthBaseInput.vue'
+import AuthLayout from '@/components/user/AuthLayout.vue'
 import api from '@/api/user/index.js'
 
 /**

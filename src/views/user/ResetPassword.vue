@@ -7,9 +7,9 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { KeyRound, Lock, CheckCircle2, Check } from 'lucide-vue-next'
-import AuthBaseInput from '@/components/auth/AuthBaseInput.vue'
-import PasswordLayout from '@/components/auth/PasswordLayout.vue'
-import PasswordModal from '@/components/auth/PasswordModal.vue'
+import AuthBaseInput from '@/components/user/AuthBaseInput.vue'
+import PasswordLayout from '@/components/user/PasswordLayout.vue'
+import PasswordModal from '@/components/user/PasswordModal.vue'
 
 /**
  * ==============================================================================

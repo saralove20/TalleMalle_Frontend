@@ -8,8 +8,8 @@ import { reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { Lock, KeyRound, CheckCircle2 } from 'lucide-vue-next'
-import AuthBaseInput from '../../components/auth/AuthBaseInput.vue'
-import PasswordPolicy from '../../components/auth/PasswordPolicy.vue'
+import AuthBaseInput from '@/components/user/AuthBaseInput.vue'
+import PasswordPolicy from '@/components/user/PasswordPolicy.vue'
 import SettingPageLayout from '@/components/setting/SettingPageLayout.vue'
 
 /**
