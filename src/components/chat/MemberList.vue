@@ -23,6 +23,11 @@ const props = defineProps({
 
 // Inject (데이터 주입)
 const myUserName = inject('myUserName', '익명')
+const myUserImg = inject('myUserImg', '')
+
+const myProfileImg = computed(() => {
+  return myUserImg?.value || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+})
 
 /**
  * ==============================================================================
@@ -61,7 +66,7 @@ const currentMemberCount = computed(() => {
       <!-- 1. 내 프로필 (최상단 고정) -->
       <MemberListItem
         :name="myUserName"
-        img="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+        :img="myProfileImg"
         :is-me="true"
         :clickable="false"
       />
