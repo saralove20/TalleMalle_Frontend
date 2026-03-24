@@ -11,7 +11,7 @@ const showSidebar = computed(() => !route.meta.hideNavbar && !isDriverMode.value
 </script>
 
 <template>
-  <!-- <ErrorBoundary> -->
+   <ErrorBoundary>
   <div class="h-screen w-screen overflow-hidden bg-slate-50 relative flex">
     <main class="flex-1 w-full h-full relative z-0">
       <RouterView v-slot="{ Component }">
@@ -25,31 +25,10 @@ const showSidebar = computed(() => !route.meta.hideNavbar && !isDriverMode.value
       </div>
     </Transition>
   </div>
-  <!-- </ErrorBoundary> -->
+   </ErrorBoundary>
 </template>
 
 <style>
-/* 전역 스크롤바 스타일 */
-.custom-scroll::-webkit-scrollbar {
-  width: 5px;
-}
-
-.custom-scroll::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-
-/* 페이드 애니메이션 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 /* 왼쪽 슬라이드 애니메이션 */
 .slide-left-enter-active,
 .slide-left-leave-active {
