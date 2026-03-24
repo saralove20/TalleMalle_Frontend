@@ -1,4 +1,6 @@
 <script setup>
+import { TrendingUp } from 'lucide-vue-next'
+
 /**
  * ==============================================================================
  * 2. CONFIG & STORES
