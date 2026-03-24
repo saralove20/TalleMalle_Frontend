@@ -78,7 +78,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto p-4 bg-gray-50 min-h-screen pb-20 relative">
+  <div class="max-w-2xl mx-auto p-4 bg-gray-50 h-[100dvh] overflow-y-auto overscroll-y-contain pb-20 relative">
     
     <Transition name="fade">
       <div v-if="showUpdateAlert" class="fixed top-20 left-4 right-4 z-50">
