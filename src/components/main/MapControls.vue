@@ -42,7 +42,6 @@ const handleMoveLocation = () => emit('moveLocation')
             </div>
             <div class="hidden md:flex flex-col">
                 <span class="text-sm font-bold text-slate-900">{{ nickname }}</span>
-                <span class="text-[11px] text-emerald-600 font-bold">37.5°C</span>
             </div>
         </div>
 

@@ -1,9 +1,9 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 5000,
-  withCredentials: true // 쿠키 httpOnly일때 필수
+  withCredentials: true, // 쿠키 httpOnly일때 필수
 })
 
 api.interceptors.request.use(
